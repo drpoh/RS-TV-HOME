@@ -39,6 +39,27 @@ for src, dest in parts:
 if version in ("stable", "preview"):
     (out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
     (out / "ha-bridge" / "scene-key").chmod(0o600)
+if version == "preview":
+    # Private, optional assets fetched from this user's TV; never copy into source.
+    icon_dir = out / "app" / "tv-icons"
+    if icon_dir.exists():
+        shutil.rmtree(icon_dir)
+    rules = []
+    for name in ("ott", "youtube", "netflix", "live", "family", "browser", "cast"):
+        original = root / ".local" / "tv-icons" / (name + ".png")
+        if original.is_symlink() or not original.is_file() or original.stat().st_size > 2*1024*1024:
+            continue
+        if not original.read_bytes().startswith(bytes.fromhex("89504e470d0a1a0a")):
+            continue
+        icon_dir.mkdir(mode=0o755, exist_ok=True)
+        target = icon_dir / original.name
+        shutil.copyfile(original, target)
+        target.chmod(0o644)
+        rules.append("#tiles .tile." + name + " .mark{background-image:url(tv-icons/" + name + ".png)!important}")
+    page = out / "app" / "index.html"
+    if rules:
+        page.write_text(page.read_text().replace("</style>", chr(10).join(rules) + chr(10) + "</style>", 1))
+    print("Optional local TV icons:", len(rules))
 if version == "magic-remote":
     (out / "service" / "tv-menu-key").write_text(cfg["REMOTE_MENU_KEY"] + chr(10))
     (out / "service" / "tv-menu-key").chmod(0o600)
