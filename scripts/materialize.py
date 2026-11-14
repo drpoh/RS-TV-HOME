@@ -3,8 +3,8 @@
 from pathlib import Path
 import json, re, shutil, sys
 root = Path(__file__).resolve().parents[1]
-if len(sys.argv) != 2 or sys.argv[1] not in ("stable", "preview"):
-    raise SystemExit("Usage: materialize.py stable|preview")
+if len(sys.argv) != 2 or sys.argv[1] not in ("stable", "preview", "family-frame"):
+    raise SystemExit("Usage: materialize.py stable|preview|family-frame")
 version = sys.argv[1]
 cfg = json.loads((root / ".local/config.json").read_text())
 expected = json.loads((root / "config.example.json").read_text())
@@ -18,10 +18,15 @@ if not re.fullmatch("[a-f0-9]{64}", cfg["ACTION_KEY"]):
 out = root / "dist" / version
 out.mkdir(parents=True, exist_ok=True, mode=0o700)
 out.chmod(0o700)
-for src, dest in ((root / "apps" / version, out / "app"), (root / "ha-bridge", out / "ha-bridge")):
+parts = [(root / "apps" / version, out / "app")]
+if version == "family-frame":
+    parts.append((root / "services/family-frame", out / "service"))
+else:
+    parts.append((root / "ha-bridge", out / "ha-bridge"))
+for src, dest in parts:
     shutil.copytree(src, dest, dirs_exist_ok=True)
     for file in dest.rglob("*"):
-        if file.suffix not in (".js", ".mjs", ".html", ".json", ".css", ".svg"):
+        if file.suffix not in (".js", ".mjs", ".html", ".json", ".css", ".svg", ".py"):
             continue
         s = file.read_text()
         for k, v in cfg.items():
@@ -29,6 +34,7 @@ for src, dest in ((root / "apps" / version, out / "app"), (root / "ha-bridge", o
         if re.search(r"__RS_[A-Z_]+__", s):
             raise SystemExit("Unresolved placeholder: " + file.name)
         file.write_text(s)
-(out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
-(out / "ha-bridge" / "scene-key").chmod(0o600)
+if version != "family-frame":
+    (out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
+    (out / "ha-bridge" / "scene-key").chmod(0o600)
 print("Build files prepared for", version)

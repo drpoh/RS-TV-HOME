@@ -15,3 +15,6 @@ Do not commit generated builds, action keys, private media, camera credentials o
 
 ## Security
 See [mandatory secret-handling rules](docs/security.md). Enable local hooks in every clone before committing.
+
+## Family Frame
+The TV client (1.1.1) and local photo/video and upload services are in apps/family-frame/ and services/family-frame/. Build with python3 scripts/materialize.py family-frame. See [Family Frame documentation](docs/family-frame.md).

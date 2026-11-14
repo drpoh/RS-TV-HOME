@@ -23,3 +23,10 @@ tv-registration.json
 *.pfx
 *.zip
 .ssh/
+
+upload-auth.json
+upload-auth.new
+rs-family-photos/
+*.jpg
+*.jpeg
+*.mp4

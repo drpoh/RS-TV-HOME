@@ -14,5 +14,7 @@
   "COFFEE_POWER_ENTITY": "configure-locally",
   "CAMERA_HEADING": "configure-locally",
   "DASHBOARD_PATH": "configure-locally",
-  "ACTION_KEY": "REPLACE_ME"
+  "ACTION_KEY": "REPLACE_ME",
+  "FAMILY_USB_PATH": "configure-locally",
+  "FAMILY_NETWORK": "configure-locally"
 }

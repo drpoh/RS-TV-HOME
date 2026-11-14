@@ -13,7 +13,7 @@ def blocked(path):
     p = PurePosixPath(path)
     n = p.name.lower()
     return (any(x.lower() in {".local", "dist", "node_modules", ".venv", "__pycache__", ".ssh"} for x in p.parts)
-            or n in {"scene-key", "tv-menu-key", "token", "credentials.json", "secrets.yaml", "secrets.yml", "config.local.json", "tv-registration.json", "id_rsa", "id_ed25519"}
+            or n in {"scene-key", "tv-menu-key", "token", "credentials.json", "secrets.yaml", "secrets.yml", "config.local.json", "tv-registration.json", "upload-auth.json", "upload-auth.new", "id_rsa", "id_ed25519"}
             or n.startswith(".env") or n.endswith((".pem", ".key", ".p12", ".pfx", ".ipk", ".zip", ".tar.gz", ".log")))
 RULES = {
     "private-key": re.compile(rb"-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----"),
@@ -34,7 +34,7 @@ def known_values():
 def inspect(path, data, known):
     if blocked(path):
         return ["private-or-generated-path"]
-    if path.endswith(".png") and path in {"apps/stable/icon.png", "apps/preview/icon.png"}:
+    if path.endswith(".png") and path in {"apps/stable/icon.png", "apps/preview/icon.png", "apps/family-frame/icon.png"}:
         # Only the two existing app icons are accepted; never scan arbitrary archives/binaries.
         import hashlib
         if hashlib.sha256(data).hexdigest() in ICON_HASHES:
@@ -48,7 +48,7 @@ def inspect(path, data, known):
     if any(v in data for v in known):
         hits.append("known-private-value")
     return hits
-ICON_HASHES = {'c72b5f0473846e824fab492cf03eb773' + '2d05882f9d0182de534ca979367c7310'}  # populated below for reviewed existing assets
+ICON_HASHES = {'c72b5f0473846e824fab492cf03eb773' + '2d05882f9d0182de534ca979367c7310', '0c0d9dc4638dd40cdff986a2d1434c98' + 'a2a874475de5e9084f869137685c6304'}  # populated below for reviewed existing assets
 def entries(tree=None):
     if tree is None:
         for entry in git("ls-files", "-s", "-z").split(b"\0"):

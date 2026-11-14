@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=1280,height=720,initial-scale=1"><title>RS Family Frame</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#080d17;color:#fff;font-family:Arial,sans-serif;overflow:hidden}
+.photo{position:absolute;left:0;top:0;width:100%;height:100%;background-position:center;background-repeat:no-repeat;background-size:contain;opacity:0;-webkit-transition:opacity .55s;transition:opacity .55s}
+#video{position:absolute;left:0;top:0;width:100%;height:100%;background:#000}
+#empty{position:absolute;left:0;top:0;width:100%;height:100%;text-align:center;background:#101b30;padding-top:203px}
+#empty h1{font-size:56px;font-weight:400;margin:22px 0}#empty p{font-size:25px;color:#d9e6ef;line-height:1.5;margin:0 auto;width:900px}
+#clock{position:absolute;top:35px;right:52px;font-size:32px;text-shadow:0 2px 8px #000}
+#bar{position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,.67);padding:25px 42px;font-size:22px}
+#count{float:right}#notice{position:absolute;bottom:112px;left:0;width:100%;text-align:center;font-size:25px;text-shadow:0 2px 8px #000}.hidden{display:none}
+</style></head>
+<body><div id="p0" class="photo"></div><div id="p1" class="photo"></div><video id="video" class="hidden" preload="auto"></video><div id="empty"><h1>Семейная фоторамка</h1><p id="message">Подключение к домашнему альбому...</p></div><div id="clock"></div><div id="notice"></div><div id="bar">← → Назад / далее　 OK Пауза　 ↑ ↓ Интервал　 Назад Выход <span id="count"></span></div>
+<script>
+(function(){
+'use strict';
+var base='http://__RS_BRIDGE_HOST__:8788',items=[],index=0,layer=0,delay=10,paused=false,timer=null,watch=null,hideTimer=null,seq=0,loaded=false,pending=false,signature='',mode='';
+function el(id){return document.getElementById(id);}
+var v=el('video');
+function say(msg){el('notice').textContent=msg;el('bar').className='';clearTimeout(hideTimer);hideTimer=setTimeout(function(){el('notice').textContent='';if(loaded)el('bar').className='hidden';},4500);}
+function count(){el('count').textContent=items.length?(index+1)+' / '+items.length+' · '+(mode==='video'?'Видео':delay+' сек.'):'';}
+function clear(){clearTimeout(timer);clearTimeout(watch);}
+function schedule(){clearTimeout(timer);if(!paused&&items.length>1&&mode!=='video')timer=setTimeout(function(){show(index+1);},delay*1000);}
+function stopVideo(){v.onended=v.onerror=v.onplaying=v.onwaiting=v.onstalled=null;try{v.pause();v.removeAttribute('src');v.load();}catch(e){}v.className='hidden';}
+function empty(msg){loaded=false;el('empty').className='';el('message').textContent=msg;el('bar').className='';}
+function fail(ticket){if(ticket!==seq)return;clear();stopVideo();mode='';say('Файл недоступен');if(!paused&&items.length>1)timer=setTimeout(function(){show(index+1);},2000);}
+function timeout(ticket){clearTimeout(watch);if(!paused)watch=setTimeout(function(){fail(ticket);},25000);}
+function show(n){
+ if(!items.length)return;clear();var ticket=++seq;stopVideo();index=(n+items.length)%items.length;var item=items[index];mode=item.type;
+ if(mode==='video'){
+  v.onended=function(){if(ticket===seq&&!paused)show(index+1);};v.onerror=function(){fail(ticket);};
+  v.onplaying=function(){if(ticket!==seq)return;clearTimeout(watch);loaded=true;el('empty').className='hidden';v.className='';count();};
+  v.onwaiting=v.onstalled=function(){timeout(ticket);};
+  v.src=base+'/video/'+item.id;v.className='';el('empty').className='hidden';timeout(ticket);
+  if(!paused){try{var play=v.play();if(play&&play.catch)play.catch(function(){fail(ticket);});}catch(e){fail(ticket);}}
+  count();return;
+ }
+ var next=1-layer,img=new Image(),url=base+'/photo/'+item.id;
+ timeout(ticket);
+ img.onload=function(){if(ticket!==seq)return;clearTimeout(watch);el('p'+next).style.backgroundImage='url("'+url+'")';el('p'+next).style.opacity='1';el('p'+layer).style.opacity='0';layer=next;loaded=true;el('empty').className='hidden';count();schedule();};
+ img.onerror=function(){fail(ticket);};img.src=url;
+}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function order(a){var p=[],b=[],r=[];for(var i=0;i<a.length;i++)(a[i].type==='video'?b:p).push(a[i]);shuffle(p);shuffle(b);while(p.length||b.length){for(var j=0;j<3&&p.length;j++)r.push(p.pop());if(b.length)r.push(b.pop());}return r;}
+function refresh(){
+ if(pending)return;pending=true;var x=new XMLHttpRequest(),finished=false;
+ function done(){if(finished)return false;finished=true;pending=false;return true;}
+ x.open('GET',base+'/api/album',true);x.timeout=6000;
+ x.onreadystatechange=function(){
+  if(x.readyState!==4||!done())return;
+  if(x.status!==200){if(!loaded)empty('Альбом недоступен. Проверяем подключение.');return;}
+  try{
+   var a=JSON.parse(x.responseText),fresh=a.items||[],sig=[],i;
+   if(!a.items&&a.photos){for(i=0;i<a.photos.length;i++)fresh.push({id:a.photos[i],type:'photo'});}
+   for(i=0;i<fresh.length;i++)sig.push(fresh[i].id);sig=sig.sort().join(',');
+   if(sig===signature&&items.length)return;
+   var old=items[index]&&items[index].id;signature=sig;items=order(fresh);
+   if(!items.length){++seq;clear();stopVideo();el('p0').style.opacity=el('p1').style.opacity='0';empty('Альбом пока пуст. Подключите флешку или загрузите фотографии.');count();return;}
+   for(i=0;i<items.length;i++){if(items[i].id===old){index=i;count();return;}}
+   show(0);say('');
+  }catch(e){if(!loaded)empty('Не удалось прочитать альбом.');}
+ };
+ x.onerror=x.ontimeout=function(){if(done()&&!loaded)empty('Альбом недоступен.');};
+ try{x.send();}catch(e){done();empty('Нет соединения с Raspberry Pi.');}
+}
+document.addEventListener('keydown',function(e){
+ var k=e.keyCode;
+ if(k===37||k===39){show(index+(k===37?-1:1));say('');}
+ else if(k===13){paused=!paused;say(paused?'Пауза':'Слайд-шоу');if(paused){clear();if(mode==='video')v.pause();}else if(mode==='video'){timeout(seq);try{v.play();}catch(err){fail(seq);}}else schedule();}
+ else if(k===38||k===40){delay=Math.max(5,Math.min(60,delay+(k===38?5:-5)));count();say('Интервал: '+delay+' сек.');schedule();}
+ else if(k===461||k===27){clear();stopVideo();window.close();return;}
+ else{return;}e.preventDefault();
+});
+function clock(){var d=new Date(),h=d.getHours(),m=d.getMinutes();el('clock').textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m;}
+clock();setInterval(clock,15000);refresh();setInterval(refresh,30000);
+})();
+</script></body></html>
