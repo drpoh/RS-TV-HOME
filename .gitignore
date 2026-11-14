@@ -30,3 +30,15 @@ rs-family-photos/
 *.jpg
 *.jpeg
 *.mp4
+
+settings-v2.json
+motion-settings.json
+status.json
+last-result.json
+timings.json
+voice-probe-result.json
+*.wav
+*.pcm
+*.raw
+*.m4a
+*.ogg

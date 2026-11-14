@@ -1,0 +1,3 @@
+# Only the registered LG Magic Remote, not other HID devices.
+SUBSYSTEM=="hidraw", KERNELS=="0005:000F:3412.*", IMPORT{parent}="HID_UNIQ"
+SUBSYSTEM=="hidraw", KERNELS=="0005:000F:3412.*", ENV{HID_UNIQ}=="__RS_REMOTE_MAC__", GROUP="__RS_REMOTE_GROUP__", MODE="0640"

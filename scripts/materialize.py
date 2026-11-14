@@ -3,8 +3,8 @@
 from pathlib import Path
 import json, re, shutil, sys
 root = Path(__file__).resolve().parents[1]
-if len(sys.argv) != 2 or sys.argv[1] not in ("stable", "preview", "family-frame"):
-    raise SystemExit("Usage: materialize.py stable|preview|family-frame")
+if len(sys.argv) != 2 or sys.argv[1] not in ("stable", "preview", "family-frame", "magic-remote"):
+    raise SystemExit("Usage: materialize.py stable|preview|family-frame|magic-remote")
 version = sys.argv[1]
 cfg = json.loads((root / ".local/config.json").read_text())
 expected = json.loads((root / "config.example.json").read_text())
@@ -21,12 +21,14 @@ out.chmod(0o700)
 parts = [(root / "apps" / version, out / "app")]
 if version == "family-frame":
     parts.append((root / "services/family-frame", out / "service"))
+elif version == "magic-remote":
+    parts.append((root / "services/magic-remote", out / "service"))
 else:
     parts.append((root / "ha-bridge", out / "ha-bridge"))
 for src, dest in parts:
     shutil.copytree(src, dest, dirs_exist_ok=True)
     for file in dest.rglob("*"):
-        if file.suffix not in (".js", ".mjs", ".html", ".json", ".css", ".svg", ".py"):
+        if file.suffix not in (".js", ".mjs", ".html", ".json", ".css", ".svg", ".py", ".rules"):
             continue
         s = file.read_text()
         for k, v in cfg.items():
@@ -34,7 +36,10 @@ for src, dest in parts:
         if re.search(r"__RS_[A-Z_]+__", s):
             raise SystemExit("Unresolved placeholder: " + file.name)
         file.write_text(s)
-if version != "family-frame":
+if version in ("stable", "preview"):
     (out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
     (out / "ha-bridge" / "scene-key").chmod(0o600)
+if version == "magic-remote":
+    (out / "service" / "tv-menu-key").write_text(cfg["REMOTE_MENU_KEY"] + chr(10))
+    (out / "service" / "tv-menu-key").chmod(0o600)
 print("Build files prepared for", version)

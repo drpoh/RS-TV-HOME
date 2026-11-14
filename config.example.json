@@ -16,5 +16,16 @@
   "DASHBOARD_PATH": "configure-locally",
   "ACTION_KEY": "REPLACE_ME",
   "FAMILY_USB_PATH": "configure-locally",
-  "FAMILY_NETWORK": "configure-locally"
+  "FAMILY_NETWORK": "configure-locally",
+  "REMOTE_MAC": "configure-locally",
+  "REMOTE_GROUP": "configure-locally",
+  "REMOTE_MENU_KEY": "configure-locally",
+  "HA_HOST": "configure-locally",
+  "VOICE_PIPELINE": "configure-locally",
+  "VOICE_SPEAKER": "configure-locally",
+  "VOICE_TV_ENTITY": "configure-locally",
+  "VOICE_TV_NOTIFY": "configure-locally",
+  "VOICE_SAUNA_READY": "configure-locally",
+  "TV_DEVICE_ALIAS": "configure-locally",
+  "REMOTE_ADDRESS_VARIANT_A": "configure-locally"
 }

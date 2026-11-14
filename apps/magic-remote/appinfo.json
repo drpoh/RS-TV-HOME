@@ -1,0 +1,1 @@
+{"id": "com.rs.magicremote", "version": "1.4.0", "vendor": "RS Home", "type": "web", "main": "index.html", "title": "RS Magic Remote", "icon": "icon.png", "largeIcon": "icon.png", "bgColor": "#10182b", "requiredACG": []}

@@ -13,18 +13,20 @@ def blocked(path):
     p = PurePosixPath(path)
     n = p.name.lower()
     return (any(x.lower() in {".local", "dist", "node_modules", ".venv", "__pycache__", ".ssh"} for x in p.parts)
-            or n in {"scene-key", "tv-menu-key", "token", "credentials.json", "secrets.yaml", "secrets.yml", "config.local.json", "tv-registration.json", "upload-auth.json", "upload-auth.new", "id_rsa", "id_ed25519"}
-            or n.startswith(".env") or n.endswith((".pem", ".key", ".p12", ".pfx", ".ipk", ".zip", ".tar.gz", ".log")))
+            or n in {"scene-key", "tv-menu-key", "token", "credentials.json", "secrets.yaml", "secrets.yml", "config.local.json", "tv-registration.json", "upload-auth.json", "upload-auth.new", "settings-v2.json", "motion-settings.json", "status.json", "last-result.json", "timings.json", "voice-probe-result.json", "id_rsa", "id_ed25519"}
+            or n.startswith(".env") or n.endswith((".pem", ".key", ".p12", ".pfx", ".ipk", ".zip", ".tar.gz", ".log", ".wav", ".pcm", ".raw", ".m4a", ".ogg", ".mp3", ".mp4", ".jpg", ".jpeg", ".webp")))
 RULES = {
     "private-key": re.compile(rb"-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----"),
     "github-token": re.compile(rb"(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})"),
     "api-token": re.compile(rb"(?:sk-(?:proj-)?[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{35}|xox[baprs]-[A-Za-z0-9-]{15,})"),
     "jwt": re.compile(rb"eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{12,}"),
     "url-credentials": re.compile(rb"(?:https?|rtsps?|mqtts?|ftp)://[^\s/'\x22:@]+:[^\s/'\x22@]+@", re.I),
+    "local-network-address": re.compile(rb"(?<![0-9])192[.]168[.][0-9]{1,3}[.][0-9]{1,3}(?![0-9])"),
+    "mac-address": re.compile(rb"(?i)(?<![0-9a-f])(?:[0-9a-f]{2}:){5}[0-9a-f]{2}(?![0-9a-f])"),
     "long-hex": re.compile(rb"(?<![a-fA-F0-9])[a-fA-F0-9]{48,}(?![a-fA-F0-9])"),
 }
 ASSIGN = re.compile(rb"""(?ix)(?:["']?\b(?:password|passwd|passphrase|secret|token|api[_-]?key|access[_-]?token|client[_-]?secret|action[_-]?key|scene[_-]?key|authorization)\b["']?)\s*[:=]\s*["']([^"'\r\n]{3,})["']""")
-SAFE = {b"REPLACE_ME", b"configure-locally", b"Bearer ", b"application/json", b"token", b"secret"}
+SAFE = {b"REPLACE_ME", b"configure-locally", b"Bearer ", b"__TOKEN__", b"application/json", b"token", b"secret"}
 def known_values():
     f = ROOT / ".local/config.json"
     if not f.is_file():
@@ -34,7 +36,7 @@ def known_values():
 def inspect(path, data, known):
     if blocked(path):
         return ["private-or-generated-path"]
-    if path.endswith(".png") and path in {"apps/stable/icon.png", "apps/preview/icon.png", "apps/family-frame/icon.png"}:
+    if path.endswith(".png") and path in {"apps/stable/icon.png", "apps/preview/icon.png", "apps/family-frame/icon.png", "apps/magic-remote/icon.png"}:
         # Only the two existing app icons are accepted; never scan arbitrary archives/binaries.
         import hashlib
         if hashlib.sha256(data).hexdigest() in ICON_HASHES:
@@ -48,7 +50,7 @@ def inspect(path, data, known):
     if any(v in data for v in known):
         hits.append("known-private-value")
     return hits
-ICON_HASHES = {'c72b5f0473846e824fab492cf03eb773' + '2d05882f9d0182de534ca979367c7310', '0c0d9dc4638dd40cdff986a2d1434c98' + 'a2a874475de5e9084f869137685c6304'}  # populated below for reviewed existing assets
+ICON_HASHES = {'c72b5f0473846e824fab492cf03eb773' + '2d05882f9d0182de534ca979367c7310', '0c0d9dc4638dd40cdff986a2d1434c98' + 'a2a874475de5e9084f869137685c6304', '7f82d1462d551bbbf2be336d5ce270f6' + '875e9fd2ddfb400e7e7af7672afe86f3'}  # populated below for reviewed existing assets
 def entries(tree=None):
     if tree is None:
         for entry in git("ls-files", "-s", "-z").split(b"\0"):
