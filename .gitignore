@@ -42,3 +42,7 @@ voice-probe-result.json
 *.raw
 *.m4a
 *.ogg
+
+phone-settings.json
+phone-preferences.json
+runtime.json

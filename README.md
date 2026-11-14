@@ -23,3 +23,5 @@ The TV client (1.1.1) and local photo/video and upload services are in apps/fami
 The Magic Remote 1.4.0 TV app and Raspberry Pi services, including Magic Voice 0.6.2, are included. Build with python3 scripts/materialize.py magic-remote. See [documentation](docs/magic-remote.md).
 
 Optional original TV icons: see [local icon sync](docs/tv-icons.md).
+
+Phone settings (Preview): [local setup](docs/phone-settings.md).

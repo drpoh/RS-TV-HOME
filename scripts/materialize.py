@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Materialize local config into ignored build output; does not deploy."""
 from pathlib import Path
-import json, re, shutil, sys
+import json, re, shutil, sys, os, secrets
 root = Path(__file__).resolve().parents[1]
 if len(sys.argv) != 2 or sys.argv[1] not in ("stable", "preview", "family-frame", "magic-remote"):
     raise SystemExit("Usage: materialize.py stable|preview|family-frame|magic-remote")
@@ -25,8 +25,28 @@ elif version == "magic-remote":
     parts.append((root / "services/magic-remote", out / "service"))
 else:
     parts.append((root / "ha-bridge", out / "ha-bridge"))
+if version == "preview":
+    local = root / ".local"
+    local.chmod(0o700)
+    auth = local / "phone-settings.json"
+    if not auth.exists():
+        import ipaddress
+        network = str(ipaddress.ip_interface(cfg["BRIDGE_HOST"] + "/24").network)
+        private = {"host": cfg["BRIDGE_HOST"], "tv": cfg["TV_HOST"], "network": network,
+                   "tv_key": secrets.token_hex(32), "phone_pin": str(secrets.randbelow(100000000)).zfill(8),
+                   "state_path": str(local / "phone-preferences.json")}
+        fd = os.open(auth, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "w") as f:
+            json.dump(private, f)
+    if auth.is_symlink() or auth.stat().st_mode & 0o077:
+        raise SystemExit("Unsafe phone settings file")
+    private = json.loads(auth.read_text())
+    if not re.fullmatch("[a-f0-9]{64}", private["tv_key"]) or not re.fullmatch("[0-9]{8}", private["phone_pin"]):
+        raise SystemExit("Invalid local phone configuration")
+    cfg["PHONE_TV_KEY"] = private["tv_key"]
+    parts.append((root / "services/phone-settings", out / "phone-settings"))
 for src, dest in parts:
-    shutil.copytree(src, dest, dirs_exist_ok=True)
+    shutil.copytree(src, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "runtime.json"))
     for file in dest.rglob("*"):
         if file.suffix not in (".js", ".mjs", ".html", ".json", ".css", ".svg", ".py", ".rules"):
             continue
@@ -36,6 +56,12 @@ for src, dest in parts:
         if re.search(r"__RS_[A-Z_]+__", s):
             raise SystemExit("Unresolved placeholder: " + file.name)
         file.write_text(s)
+if version == "preview":
+    runtime = out / "phone-settings" / "runtime.json"
+    fd = os.open(runtime, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "w") as f:
+        json.dump(private, f)
+    runtime.chmod(0o600)
 if version in ("stable", "preview"):
     (out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
     (out / "ha-bridge" / "scene-key").chmod(0o600)
