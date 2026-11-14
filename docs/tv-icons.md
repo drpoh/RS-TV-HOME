@@ -1,6 +1,6 @@
 # Optional original TV icons
 
-Preview 2.0.1 supports local icons for seven fixed launcher entries. The coffee action continues to use the bundled generic pictogram. The helper uses the existing paired local TV connection. It prefers the launch-point API because legacy firmware can expose broken icon URLs in listApps.
+Preview 2.0.2 supports local icons for five fixed launcher entries. The coffee action continues to use the bundled generic pictogram. The helper uses the existing paired local TV connection. It prefers the launch-point API because legacy firmware can expose broken icon URLs in listApps.
 
 Run with the existing Python environment containing pywebostv and a private registration file:
 ```sh

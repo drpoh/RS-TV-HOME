@@ -15,8 +15,6 @@ ROOT = Path(__file__).resolve().parents[1]
 APPS = {
     "es.ottplayer.widget": "ott",
     "youtube.leanback.v4": "youtube",
-    "netflix": "netflix",
-    "com.webos.app.livetv": "live",
     "com.rs.familyframe": "family",
     "com.webos.app.browser": "browser",
     "com.webos.app.miracast": "cast",

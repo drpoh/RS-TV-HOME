@@ -45,7 +45,7 @@ if version == "preview":
     if icon_dir.exists():
         shutil.rmtree(icon_dir)
     rules = []
-    for name in ("ott", "youtube", "netflix", "live", "family", "browser", "cast"):
+    for name in ("ott", "youtube", "family", "browser", "cast"):
         original = root / ".local" / "tv-icons" / (name + ".png")
         if original.is_symlink() or not original.is_file() or original.stat().st_size > 2*1024*1024:
             continue

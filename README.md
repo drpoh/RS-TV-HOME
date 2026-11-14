@@ -3,7 +3,7 @@
 Lightweight custom launcher for legacy LG webOS televisions, using a local Raspberry Pi bridge to Home Assistant.
 
 ## Repository layout
-- `apps/stable/` — v1.7.0
+- `apps/stable/` — v1.7.1
 - `apps/preview/` — v2.0.0 Preview
 - `ha-bridge/` — bridge source template
 - `docs/` — architecture and project boundaries
