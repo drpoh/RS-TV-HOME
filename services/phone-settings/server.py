@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 APPS = ("es.ottplayer.widget", "youtube.leanback.v4", "coffee_power",
         "com.rs.familyframe", "com.webos.app.browser", "com.webos.app.miracast")
+AVAILABLE = APPS + ('de.benzac.msx', 'vkvideo', 'rutube', 'com.webos.app.smartshare', 'org.webosbrew.hbchannel', 'com.lgerp.speedtest', 'com.ministra.app.player', 'com.stalker.app.player', 'ivi', 'tntmusic', 'channelone', 'ctc.media', 'europaplustv', 'com.webos.app.notificationcenter')
 THEMES = ("blue", "violet", "forest", "graphite")
 WIDGETS = ("outdoor", "indoor", "sauna", "price", "camera", "chart")
 ROOT = Path(__file__).resolve().parent
@@ -32,11 +33,11 @@ def normalize(p):
         raise ValueError("Invalid preferences")
     if p["theme"] not in THEMES or not isinstance(p["order"], list) or not isinstance(p["hidden"], list):
         raise ValueError("Invalid preferences")
-    if any(not isinstance(x, str) or x not in APPS for x in p["order"]) or len(set(p["order"])) != len(p["order"]):
+    if not 1 <= len(p["order"]) <= 6 or any(not isinstance(x, str) or x not in AVAILABLE for x in p["order"]) or len(set(p["order"])) != len(p["order"]):
         raise ValueError("Invalid app order")
     if any(not isinstance(x, str) or x not in WIDGETS for x in p["hidden"]) or len(set(p["hidden"])) != len(p["hidden"]):
         raise ValueError("Invalid widgets")
-    return {"theme": p["theme"], "order": p["order"] + [x for x in APPS if x not in p["order"]],
+    return {"theme": p["theme"], "order": p["order"],
             "hidden": p["hidden"]}
 
 class Store:
