@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RS TV Home</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101d32;color:#fff;font-family:Arial,sans-serif}
+body{background:-webkit-linear-gradient(135deg,#101a2d,#25354f 57%,#192b42)}
+#screen{position:absolute;width:1280px;height:720px;left:0;top:0;-webkit-transform-origin:0 0;transform-origin:0 0;padding:43px 64px}
+.top{position:relative;height:146px}.brand{font-size:18px;letter-spacing:3px;font-weight:bold;color:#c3d5eb}.brand:before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:#75c9ff;margin-right:12px}.heading{font-size:50px;line-height:1.12;font-weight:bold;margin:13px 0 7px;letter-spacing:-1px}.sub{font-size:19px;color:#c8d6e9}
+.time{position:absolute;right:0;top:7px;text-align:right;font-size:58px;line-height:1;font-weight:normal}.date{font-size:19px;line-height:1.4;color:#c5d6e8;margin-top:7px}
+.section{font-size:17px;letter-spacing:2px;font-weight:bold;color:#c8d9ee;margin-bottom:16px}
+.tiles{width:1152px;font-size:0;line-height:0}
+.tile{display:inline-block;vertical-align:top;position:relative;width:270px;height:171px;margin:0 18px 18px 0;padding:17px 19px;border:3px solid #445974;border-radius:16px;background:#2c405d;color:#fff;text-align:left;outline:none;font-family:Arial,sans-serif;line-height:1.2;-webkit-transition:background-color .14s,border-color .14s,-webkit-transform .14s;transition:background-color .14s,border-color .14s,transform .14s}
+.tile:focus,.tile.selected{border-color:#f2f8ff;background:#405d80;-webkit-transform:scale(1.035);transform:scale(1.035);-webkit-box-shadow:0 0 18px rgba(127,192,255,.45);box-shadow:0 0 18px rgba(127,192,255,.45);z-index:2}
+.mark{display:block;width:68px;height:55px;line-height:55px;text-align:center;border-radius:12px;font-size:22px;font-weight:bold;background:#1c2c43;color:#fff}
+.label{display:block;font-size:27px;line-height:1.15;font-weight:bold;margin-top:13px;white-space:nowrap}.detail{display:block;font-size:16px;color:#dce6f3;margin-top:6px;white-space:nowrap}
+.ott .mark{background:#136a9a;font-size:19px}.youtube .mark{width:73px;height:49px;line-height:49px;margin:3px 0;background:#e52432;border-radius:12px;font-size:28px}.netflix .mark{background:#151923;color:#f13a47;font-size:43px;font-weight:bold}.yle .mark{background:#f4f7fb;color:#1d3349;font-size:22px}.live .mark{background:#237c70}.usb .mark{background:#355a91;font-size:20px}.browser .mark{background:#275e89;font-size:19px}.homebrew .mark{background:#67558d}
+.footer{position:absolute;left:64px;right:64px;bottom:35px;border-top:1px solid #60758f;padding-top:15px;font-size:17px;color:#d0def0}.right{float:right}.status{margin-top:1px;min-height:24px;line-height:24px;color:#ffdf9b;font-size:17px}
+
+#screen{padding-top:32px}.top{height:109px}.heading{font-size:42px;margin:8px 0 3px}.sub{font-size:16px}.time{font-size:49px}.date{font-size:17px}
+.metrics{font-size:0;width:1152px;margin:0 0 17px}.metric{display:inline-block;vertical-align:top;width:270px;height:77px;margin-right:18px;border-radius:12px;background:#253952;border:1px solid #45617e;padding:9px 15px}.metric-name{display:block;font-size:15px;line-height:19px;color:#bfd2e8}.metric-value{display:block;font-size:29px;font-weight:bold;line-height:35px;color:#fff}.metric.price .metric-value{color:#a8d8b8}.metric.sauna .metric-value{color:#ffd6a5}
+.section{margin-bottom:12px}.tile{height:147px;margin-bottom:13px;padding:11px 17px}.mark{height:45px;line-height:45px;width:61px}.youtube .mark{height:43px;line-height:43px;width:67px;margin:1px 0}.netflix .mark{font-size:36px}.label{font-size:25px;margin-top:10px}.detail{font-size:15px;margin-top:4px}.footer{bottom:25px;padding-top:10px}.status{font-size:15px}.hastate{float:right;font-size:14px;letter-spacing:0;font-weight:normal;color:#a9c5df}
+
+#screen{padding-top:25px}.top{height:100px}.heading{font-size:40px}.metrics{margin-bottom:12px}.metric{height:66px;padding-top:6px}.metric-value{font-size:27px;line-height:33px}.section{margin-bottom:9px}.tile{height:126px;margin-bottom:10px;padding:9px 17px}.mark{height:36px;line-height:36px;width:56px;border-radius:9px}.youtube .mark{height:35px;line-height:35px;width:58px}.netflix .mark{font-size:30px}.label{font-size:24px;margin-top:8px}.detail{font-size:14px;margin-top:3px}.scenehead{margin-top:3px}.scene-tile{height:65px;background:#25464e;border-color:#497079;padding:10px 15px}.scene-tile .label{margin:0;font-size:22px}.scene-tile .detail{margin-top:3px;font-size:13px}.scene-tile.scene-off{background:#483c4a;border-color:#80647b}.scene-tile.selected,.scene-tile:focus{background:#476b75}.status{margin-top:1px;line-height:22px;min-height:22px}.footer{bottom:25px}
+
+#screen{padding-top:18px}.top{height:76px}.brand{font-size:15px}.heading{font-size:33px;margin:5px 0 2px}.sub{display:none}.time{font-size:39px;top:3px}.date{font-size:15px;margin-top:4px}
+.metrics{margin-bottom:9px}.metric{height:55px;padding:5px 13px}.metric-name{font-size:14px;line-height:17px}.metric-value{font-size:25px;line-height:28px}
+.panels{font-size:0;margin-bottom:12px;width:1152px}.panel{display:inline-block;vertical-align:top;text-align:left;width:558px;height:166px;margin:0 18px 0 0;border:2px solid #465e7a;border-radius:12px;background:#253952;color:#fff;padding:9px 13px;font-family:Arial,sans-serif;outline:none;position:relative}.panel.selected,.panel:focus{border-color:#fff;background:#304b69;-webkit-box-shadow:0 0 12px rgba(130,190,255,.5)}
+.preview-img{width:246px;height:138px;object-fit:contain;background:#132035;border-radius:7px;vertical-align:middle}.camera-meta{display:inline-block;vertical-align:middle;width:260px;padding-left:16px}.panel-title{display:block;font-size:21px;font-weight:bold;line-height:27px}.panel-sub{display:block;font-size:15px;line-height:22px;color:#c6daf1;margin-top:4px}.chart-meta{position:absolute;top:11px;right:13px;font-size:15px;color:#c8e4d5}.chart{display:block;width:526px;height:110px;margin-top:4px}
+.section{font-size:15px;line-height:18px;margin-bottom:7px}.tile{height:85px;padding:10px 12px;margin-bottom:8px;border-radius:11px}.tile .mark{display:inline-block;vertical-align:middle;width:52px;height:42px;line-height:42px;font-size:18px;margin:0 10px 0 0}.tile .label{display:inline-block;vertical-align:middle;font-size:20px;line-height:25px;margin:0;max-width:170px}.tile .detail{margin:5px 0 0 62px;font-size:12px;line-height:13px}.netflix .mark{font-size:30px}.youtube .mark{font-size:24px}.yle .mark{font-size:19px}.scenehead{margin-top:0}.scene-tile{height:56px;padding:7px 13px}.scene-tile .label{display:block;font-size:20px;line-height:23px;max-width:none}.scene-tile .detail{margin:2px 0 0;font-size:12px}.status{font-size:14px;line-height:20px;min-height:20px}.footer{bottom:13px;padding-top:9px;font-size:14px}
+#panel-overlay{display:none;position:absolute;left:0;top:0;width:1280px;height:720px;background:#101d32;z-index:50;padding:30px 48px}#panel-overlay h2{font-size:33px;margin:0 0 13px}#big-camera,#live-camera{width:1000px;height:562px;margin:0 auto;display:block;background:#0d1627;object-fit:contain}#big-chart{width:1180px;height:530px;display:block}.overlay-footer{position:absolute;bottom:16px;left:48px;right:48px;color:#bed6ec;font-size:19px}.overlay-footer button{float:right;background:#355373;border:1px solid white;color:white;padding:5px 20px;border-radius:8px;font-size:19px}
+
+#settings-button{position:absolute;right:255px;top:12px;width:176px;height:40px;border:2px solid #60758f;border-radius:9px;background:#293d56;color:#edf5ff;font-size:17px;font-weight:bold;outline:none}
+#settings-button.selected,#settings-button:focus{border-color:#fff;background:#405d80}
+#settings-overlay{display:none;position:absolute;left:0;top:0;width:1280px;height:720px;background:#101d32;z-index:60;padding:34px 64px}
+#settings-overlay h2{font-size:34px;margin:0 0 14px}
+#settings-overlay h3{font-size:22px;margin:24px 0 10px}
+#settings-overlay p{font-size:17px;color:#c8d9eb;margin:0 0 12px}
+#settings-overlay .settings-row{font-size:0;width:1152px}
+#settings-overlay button{display:inline-block;width:270px;height:52px;margin:0 18px 10px 0;border:2px solid #627c98;border-radius:10px;background:#30465f;color:#fff;font: bold 19px Arial;outline:none;vertical-align:top}
+#settings-overlay button:focus{border:3px solid #fff;background:#4a6685;-webkit-box-shadow:0 0 9px #8abdea}
+#settings-overlay button.chosen{border-color:#81d3a5;background:#305b4d}
+#settings-overlay button.chosen:focus{border-color:#fff}
+#settings-overlay .settings-info{font-size:17px;min-height:24px;color:#9adbb4;margin-top:12px}
+#settings-overlay .settings-actions{margin-top:13px}
+#settings-overlay .settings-help{position:absolute;bottom:22px;left:64px;color:#c4d7ed;font-size:16px}
+body.theme-violet{background:#241c38;background:-webkit-linear-gradient(135deg,#1b142b,#403454 57%,#2b203d)}
+body.theme-violet .tile,body.theme-violet .metric,body.theme-violet .panel,body.theme-violet #settings-button{background:#41344f;border-color:#746087}
+body.theme-violet .tile.selected,body.theme-violet .panel.selected,body.theme-violet #settings-button.selected{background:#624d78;border-color:#fff}
+body.theme-violet #panel-overlay,body.theme-violet #settings-overlay{background:#241c38}
+body.theme-forest{background:#152d2a;background:-webkit-linear-gradient(135deg,#132824,#294641 57%,#16312d)}
+body.theme-forest .tile,body.theme-forest .metric,body.theme-forest .panel,body.theme-forest #settings-button{background:#294b44;border-color:#507970}
+body.theme-forest .tile.selected,body.theme-forest .panel.selected,body.theme-forest #settings-button.selected{background:#426d61;border-color:#fff}
+body.theme-forest #panel-overlay,body.theme-forest #settings-overlay{background:#162e29}
+body.theme-graphite{background:#1c222a;background:-webkit-linear-gradient(135deg,#171c23,#343b46 57%,#20262f)}
+body.theme-graphite .tile,body.theme-graphite .metric,body.theme-graphite .panel,body.theme-graphite #settings-button{background:#333e4b;border-color:#657385}
+body.theme-graphite .tile.selected,body.theme-graphite .panel.selected,body.theme-graphite #settings-button.selected{background:#4d5b6b;border-color:#fff}
+body.theme-graphite #panel-overlay,body.theme-graphite #settings-overlay{background:#202630}
+body .scene-tile.scene-off{border-color:#a77984}
+
+#catalog-button{position:absolute;right:445px;top:12px;width:176px;height:40px;border:2px solid #60758f;border-radius:9px;background:#293d56;color:#edf5ff;font-size:17px;font-weight:bold;outline:none}
+#catalog-button:focus,#catalog-button.selected{border-color:#fff;background:#405d80}
+#catalog-overlay{display:none;position:absolute;left:0;top:0;width:1280px;height:720px;background:#101d32;z-index:60;padding:34px 64px}
+#catalog-overlay h2{font-size:34px;margin:0 0 12px}
+#catalog-overlay p{font-size:17px;color:#c4d7ed;margin:0 0 20px}
+#catalog-apps{font-size:0;width:1152px}
+#catalog-apps button{display:inline-block;width:270px;height:100px;margin:0 18px 12px 0;border:2px solid #627c98;border-radius:12px;background:#30465f;color:#fff;font: bold 22px Arial;vertical-align:top;outline:none;text-align:left;padding:13px}
+#catalog-apps button:focus{border:3px solid #fff;background:#4a6685;-webkit-box-shadow:0 0 9px #8abdea}
+#catalog-apps small{display:block;color:#d3dfef;font: 14px Arial;margin-top:7px}
+#catalog-status{font-size:17px;color:#ffdf9b;height:25px}
+#catalog-overlay .catalog-help{position:absolute;bottom:22px;left:64px;color:#c4d7ed;font-size:16px}
+body.theme-violet #catalog-overlay{background:#241c38}
+body.theme-forest #catalog-overlay{background:#162e29}
+body.theme-graphite #catalog-overlay{background:#202630}
+.family .mark{background:#356d65;font-size:16px}.cast .mark{background:#395b87;font-size:17px}
+/* RS TV Home 1.5: lightweight 1280x720 layout, legacy WebKit */
+html,body{background:#121a32}
+body,body.theme-blue{background:#151c36;background:-webkit-linear-gradient(120deg,#11192e,#232b50 56%,#28203d)}
+body.theme-violet{background:#261d39;background:-webkit-linear-gradient(120deg,#171326,#362844 65%,#29213c)}
+body.theme-forest{background:#192f2e;background:-webkit-linear-gradient(120deg,#142724,#29433d 65%,#172e2b)}
+body.theme-graphite{background:#202832;background:-webkit-linear-gradient(120deg,#151b24,#353f4a 65%,#242e38)}
+#screen{padding:20px 64px}
+.top{height:72px}
+.brand{font-size:14px;letter-spacing:3px;color:#c8d6f2}
+.brand:before{background:#a6c6ff;border-radius:6px}
+.heading{font-size:34px;letter-spacing:-.8px;margin:4px 0 0}
+.time{font-size:43px;top:0}.date{font-size:16px;color:#d0ddf3}
+.metrics{margin-bottom:10px}
+body .metric{height:64px;padding:7px 15px;border-radius:12px;background:#27344f;border:1px solid #4e6082}
+.metric-name{font-size:15px;line-height:19px;color:#d5e0f1}
+.metric-value{font-size:28px;line-height:32px}
+.metric.price .metric-value{color:#a9ecd0}.metric.sauna .metric-value{color:#ffdfb3}
+.panels{margin-bottom:12px}
+body .panel{height:150px;padding:9px 13px;border-radius:14px;background:#28344e;border:2px solid #526381}
+.preview-img{width:224px;height:126px;border-radius:9px;background:#121b30}
+.camera-meta{width:270px;padding-left:16px}
+.panel-title{font-size:23px;line-height:28px}
+.panel-sub{font-size:16px;line-height:22px;color:#d0dcef;margin-top:3px}
+.chart-meta{font-size:14px;top:15px}
+.chart{width:526px;height:97px;margin-top:5px}
+.section{font-size:15px;line-height:20px;margin-bottom:7px;letter-spacing:1.8px;color:#d6e2f5}
+.hastate{font-size:14px;color:#bcd5e9}
+body .tile{height:82px;margin-bottom:8px;padding:9px 12px;border-radius:13px;background:#303c59;border:2px solid #536582;-webkit-transition:none;transition:none}
+.tile .mark{width:53px;height:46px;line-height:46px;margin:0 10px 0 0;border-radius:10px;font-size:18px}
+.tile .label{font-size:22px;line-height:26px;max-width:178px;letter-spacing:-.5px}
+.tile .detail{font-size:14px;line-height:16px;margin:3px 0 0 63px;color:#e0e7f4;letter-spacing:-.25px}
+.tile.family .detail{font-size:13px}
+.tile.netflix .mark{font-size:32px}.tile.youtube .mark{font-size:26px}.tile.yle .mark{font-size:20px}
+.tile.family .mark{background:#377c70;color:#fff;font-size:16px}.tile.cast .mark{background:#476a9d;font-size:17px}
+body .scene-tile{height:52px;padding:6px 13px;background:#294a50;border-color:#547f84}
+.scene-tile .label{font-size:21px;line-height:22px;max-width:none;letter-spacing:0}
+.scene-tile .detail{font-size:13px;line-height:15px;margin:1px 0 0}
+body .scene-tile.scene-off{background:#533c54;border-color:#98748e}
+body .tile.selected,body .tile:focus,body .panel.selected,body .panel:focus{background:#4b6084;border-color:#f5f8ff;-webkit-transform:none;transform:none;-webkit-box-shadow:0 0 11px rgba(167,203,255,.40);box-shadow:0 0 11px rgba(167,203,255,.40)}
+body.theme-violet .tile.selected,body.theme-violet .panel.selected{background:#675281}
+body.theme-forest .tile.selected,body.theme-forest .panel.selected{background:#47766a}
+body.theme-graphite .tile.selected,body.theme-graphite .panel.selected{background:#536579}
+#catalog-button,#settings-button{height:44px;top:8px;font-size:18px;border-radius:11px;border-color:#657999;background:#303f5d}
+#catalog-button.selected,#catalog-button:focus,#settings-button.selected,#settings-button:focus{border-color:#fff;background:#506787}
+.status{font-size:15px;line-height:20px;min-height:20px}
+.footer{font-size:14px;bottom:12px;padding-top:9px;border-color:#475774;color:#c5d3ea}
+#settings-overlay,#catalog-overlay,#panel-overlay{background:#18233b}
+#settings-overlay h2,#catalog-overlay h2{font-size:36px}
+#settings-overlay h3{font-size:24px;margin:18px 0 9px}
+#settings-overlay p,#catalog-overlay p{font-size:18px;color:#d4e0f2}
+#settings-overlay button{font-size:20px;border-radius:12px;background:#344562}
+#settings-overlay button.chosen{background:#326457;border-color:#9ee5c2}
+#settings-overlay button:focus,#catalog-apps button:focus{background:#50698a;border-color:white}
+#catalog-apps button{font-size:23px;background:#344562}
+#catalog-apps small{font-size:16px}
+
+/* 1.6: app-first, large centered tiles, compact home widgets. */
+body,body.theme-blue{background:#161b38;background:-webkit-linear-gradient(140deg,#121a30,#293052 55%,#35234e)}
+#screen{padding:22px 64px}
+.top{height:74px}.heading{font-size:34px}.brand{font-size:15px}
+.section{font-size:16px;line-height:20px;margin-bottom:8px}
+#tiles{margin-bottom:7px}
+body #tiles .tile{height:93px;padding:6px 10px;text-align:center;border:2px solid transparent;border-radius:16px;background:#334663;color:white;overflow:hidden}
+#tiles .tile .mark{display:block;width:auto;height:43px;line-height:43px;margin:0;background:transparent!important;color:#fff!important;font-size:32px;font-weight:bold;border-radius:0}
+#tiles .tile .label{display:block;font-size:22px;line-height:28px;max-width:none;letter-spacing:0;margin:0}
+#tiles .tile .detail{display:none}
+body #tiles .ott{background:#155a84}
+body #tiles .youtube{background:#a52c40}
+body #tiles .netflix{background:#272837}
+body #tiles .yle{background:#1c6479}
+body #tiles .live{background:#315e60}
+body #tiles .family{background:#50688e}
+body #tiles .browser{background:#46598e}
+body #tiles .cast{background:#574b83}
+#tiles .netflix .mark{color:#ff525d!important;font-size:42px}
+#tiles .youtube .mark{font-size:31px}
+#tiles .family .mark{font-size:28px}
+body #tiles .tile.selected,body #tiles .tile:focus{border:3px solid #fff;padding:5px 9px;background:#647da7;-webkit-box-shadow:0 0 13px rgba(190,220,255,.65);box-shadow:0 0 13px rgba(190,220,255,.65)}
+.homehead{margin-top:1px}
+.metrics{margin-bottom:9px}
+body .metric{height:57px;padding:4px 14px;background:#283752;border-radius:11px}
+.metric-name{font-size:15px;line-height:19px}
+.metric-value{font-size:26px;line-height:28px}
+.panels{margin-bottom:9px}
+body .panel{height:125px;padding:7px 12px}
+.preview-img{width:190px;height:107px}
+.camera-meta{width:310px;padding-left:15px}
+.panel-title{font-size:22px;line-height:25px}
+.panel-sub{font-size:15px;line-height:19px;margin-top:2px}
+.chart{height:78px;margin-top:3px}
+.chart-meta{top:10px}
+.scenehead{margin-top:0}
+body #scenes .tile{height:47px;padding:7px 11px}
+#scenes .tile .label{font-size:21px;line-height:25px}
+#scenes .tile .detail{display:none}
+.status{min-height:18px;line-height:18px;margin-top:0}
+.footer{bottom:9px}
+
+body #tiles .coffee{background:#79503e}
+#tiles .coffee .mark{font-size:34px}
+#tiles .coffee .label{font-size:19px;letter-spacing:-.6px}
+/* RS TV Home 2.0 preview: dock hierarchy, inspired by TV launcher design patterns.
+   No upstream runtime or root-only services. Legacy webOS layout. */
+html,body{background:#101526}
+body,body.theme-blue{background:#101526;background:-webkit-linear-gradient(135deg,#101526,#202c4b 58%,#2d2448)}
+#screen{padding:22px 64px}
+.top{height:79px}
+.brand{font-size:13px;letter-spacing:3.5px;color:#a8b8d7}
+.heading{font-size:37px;font-weight:normal;margin:5px 0 0;letter-spacing:-1px}
+.time{font-size:52px;font-weight:normal;top:-3px}.date{font-size:16px}
+#catalog-button,#settings-button{height:40px;top:14px;background:#27334e;border-radius:20px;border:1px solid #697891;font-size:17px}
+.section{font-size:14px;letter-spacing:2px;margin-bottom:8px;line-height:18px}
+#tiles{margin-bottom:7px}
+body #tiles .tile{height:69px;margin-bottom:10px;padding:7px 13px;border:2px solid #5b6b86;text-align:left;background:#283650;border-radius:14px}
+body #tiles .tile:nth-child(-n+4){height:122px;padding:7px 13px;text-align:center;border:2px solid #637697;border-radius:17px}
+#tiles .tile .mark{display:inline-block;vertical-align:middle;width:44px;height:44px;line-height:44px;margin:0 12px 0 0;color:transparent!important;font-size:0!important;background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important}
+#tiles .tile:nth-child(-n+4) .mark{display:block;width:78px;height:78px;line-height:78px;margin:0 auto 2px}
+#tiles .tile .label{display:inline-block;vertical-align:middle;font-size:22px;line-height:24px;margin:0;max-width:182px;letter-spacing:-.4px}
+#tiles .tile:nth-child(-n+4) .label{display:block;max-width:none;font-size:23px;line-height:26px}
+#tiles .tile.coffee .label{font-size:19px}
+#tiles .tile .detail{display:none}
+body #tiles .ott{background:#174f78}
+body #tiles .youtube{background:#642e48}
+body #tiles .netflix{background:#202338}
+body #tiles .coffee{background:#604438}
+body #tiles .live{background:#244f55}
+body #tiles .family{background:#344e79}
+body #tiles .browser{background:#34486e}
+body #tiles .cast{background:#493f71}
+body #tiles .tile.selected,body #tiles .tile:focus{border:3px solid #fff;padding:6px 12px;background:#50698c;-webkit-box-shadow:0 0 15px rgba(165,205,255,.46);box-shadow:0 0 15px rgba(165,205,255,.46)}
+body #tiles .tile:nth-child(-n+4).selected,body #tiles .tile:nth-child(-n+4):focus{padding:6px 12px}
+.homehead{margin-top:2px}
+.metrics{margin-bottom:10px}
+body .metric{height:59px;padding:5px 14px;border-radius:8px;border:1px solid #485877;background:#25334d}
+.metric-name{font-size:15px;color:#c7d6ef}.metric-value{font-size:27px}
+.panels{margin-bottom:9px}
+body .panel{height:117px;padding:6px 12px;background:#26334c;border:1px solid #536580;border-radius:12px}
+.preview-img{width:178px;height:100px}
+.camera-meta{width:315px}
+.panel-title{font-size:21px}.panel-sub{font-size:14px}
+.chart{height:72px}
+body #scenes .tile{height:47px;border-radius:23px;background:#29464f;text-align:center}
+body #scenes .scene-off{background:#573c4f}
+#scenes .tile .label{font-size:20px}
+.footer{bottom:10px;color:#bfcde7}
+#tiles .tile.ott .mark{background-image:url(icons/ott.svg)!important}
+#tiles .tile.youtube .mark{background-image:url(icons/youtube.svg)!important}
+#tiles .tile.netflix .mark{background-image:url(icons/netflix.svg)!important}
+#tiles .tile.coffee .mark{background-image:url(icons/coffee.svg)!important}
+#tiles .tile.live .mark{background-image:url(icons/live.svg)!important}
+#tiles .tile.family .mark{background-image:url(icons/family.svg)!important}
+#tiles .tile.browser .mark{background-image:url(icons/browser.svg)!important}
+#tiles .tile.cast .mark{background-image:url(icons/cast.svg)!important}
+
+</style></head><body><main id="screen"><header class="top"><div class="brand">RS TV HOME</div><div class="heading">Дом и развлечения</div><div class="sub">Телевидение, фильмы и любимые приложения</div><button type="button" id="catalog-button">Все приложения</button><button type="button" id="settings-button">Настройки</button><div class="time"><span id="clock">--:--</span><div class="date" id="date"></div></div></header><div class="section">ИЗБРАННОЕ И ПРИЛОЖЕНИЯ <span id="ha-link" class="hastate">Home Assistant · подключение</span></div><div class="tiles" id="tiles"></div><div class="section homehead">МОЙ ДОМ</div><div class="metrics"><div class="metric"><span class="metric-name">На улице</span><span id="ha-outdoor" class="metric-value">—</span></div><div class="metric"><span class="metric-name">В доме</span><span id="ha-indoor" class="metric-value">—</span></div><div class="metric sauna"><span class="metric-name">Сауна</span><span id="ha-sauna" class="metric-value">—</span></div><div class="metric price"><span class="metric-name">Электричество · сейчас</span><span id="ha-price" class="metric-value">—</span></div></div><div class="panels"><button type="button" class="panel" id="camera-panel"><img id="camera-preview" class="preview-img" alt=""><span class="camera-meta"><span class="panel-title">Камера крыльца</span><span class="panel-sub" id="camera-state">Подключение…</span><span class="panel-sub">Открыть камеру</span></span></button><button type="button" class="panel" id="chart-panel"><span class="panel-title">Nord Pool · сегодня</span><span class="chart-meta" id="price-summary">—</span><canvas id="price-chart" class="chart" width="526" height="110"></canvas></button></div><div class="section scenehead">БЫСТРЫЕ ДЕЙСТВИЯ</div><div class="tiles" id="scenes"></div><div class="status" id="status" role="status"></div><footer class="footer">Стрелки / Magic Remote · OK — открыть <span class="right">HOME — меню LG · v2.0.0 Preview</span></footer><div id="panel-overlay"><h2 id="panel-title"></h2><div id="camera-full"><img id="big-camera" alt=""><canvas id="live-camera" width="640" height="360" style="display:none"></canvas></div><div id="chart-full"><canvas id="big-chart" width="1180" height="530"></canvas></div><div class="overlay-footer"><span id="overlay-info"></span><button type="button" id="close-panel">Назад</button></div></div><div id="settings-overlay"><div id="settings-main"><h2>Настройки RS TV Home</h2><p>Цветовая тема и порядок приложений. Изменения сохраняются на телевизоре.</p><h3>Цветовая тема</h3><div class="settings-row" id="theme-options"></div><h3>Приложения · порядок на главном экране</h3><p>Выберите приложение, затем переместите его на одну позицию или в начало.</p><div class="settings-row" id="order-options"></div><div class="settings-row settings-actions" id="move-options"></div><div class="settings-row settings-actions" id="other-options"></div></div><div id="display-settings" style="display:none"><h2>Панель умного дома</h2><p>Выберите показатели и панели на главном экране.</p><h3>Показатели</h3><div class="settings-row" id="display-metrics"></div><h3>Панели</h3><div class="settings-row" id="display-panels"></div><h3>Настройки</h3><div class="settings-row" id="display-actions"></div></div><div class="settings-info" id="settings-info"></div><div class="settings-help">Стрелки — навигация · OK — выбор · BACK — закрыть</div></div><div id="catalog-overlay"><h2>Все приложения</h2><p>Дополнительные установленные приложения · доступность сервисов зависит от поставщика.</p><div id="catalog-apps"></div><div id="catalog-status"></div><div class="catalog-help">Стрелки — выбор · OK — открыть · BACK — назад</div></div></main><script src="catalog.js"></script><script src="settings.js"></script><script src="scenes.js"></script><script src="panels.js"></script><script src="app.js"></script><script src="ha.js"></script></body></html>

@@ -1,0 +1,12 @@
+/.local/
+/dist/
+node_modules/
+.venv/
+__pycache__/
+*.ipk
+*.log
+*.tar.gz
+*.pem
+*.key
+.env
+scene-key

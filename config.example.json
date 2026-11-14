@@ -1,0 +1,18 @@
+{
+  "BRIDGE_HOST": "configure-locally",
+  "TV_HOST": "configure-locally",
+  "CAMERA_HOST": "configure-locally",
+  "MCP_CLIENT_PATH": "configure-locally",
+  "OUTDOOR_ENTITY": "configure-locally",
+  "INDOOR_ENTITY": "configure-locally",
+  "SAUNA_ENTITY": "configure-locally",
+  "PRICE_ENTITY": "configure-locally",
+  "DAY_ENTITY": "configure-locally",
+  "MOVIE_ENTITY": "configure-locally",
+  "MORNING_ENTITY": "configure-locally",
+  "OFF_ENTITY": "configure-locally",
+  "COFFEE_POWER_ENTITY": "configure-locally",
+  "CAMERA_HEADING": "configure-locally",
+  "DASHBOARD_PATH": "configure-locally",
+  "ACTION_KEY": "REPLACE_ME"
+}
