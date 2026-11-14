@@ -10,3 +10,16 @@ __pycache__/
 *.key
 .env
 scene-key
+.env.*
+!.env.example
+secrets.yaml
+secrets.yml
+credentials.json
+config.local.json
+token
+tv-menu-key
+tv-registration.json
+*.p12
+*.pfx
+*.zip
+.ssh/

@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+# Also inspect outgoing tips, including commits not attached to current HEAD.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in *[!0]*) python3 scripts/check_secrets.py --history --commit "$local_sha";; esac
+done
