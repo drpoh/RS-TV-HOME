@@ -22,9 +22,14 @@ function pulse(){
   if(code===409||changed){dirty=false;window.rsPreferences.receive(p.preferences);}
  });
 }
-window.rsPhoneSync={changed:function(){dirty=true;serial++;pulse();},pair:function(){
- var info=document.getElementById('settings-info');info.textContent='Подключение…';
- request('pair',null,function(code,p){if(code===200&&p&&typeof p.pin==='string'){info.textContent='На телефоне: '+base+' · Код: '+p.pin+' · Только домашний Wi-Fi';}else{info.textContent='Панель телефона недоступна';}});
+var opened=false,restore=null,pairSerial=0;
+function el(id){return document.getElementById(id);}
+function close(){if(!opened)return;opened=false;pairSerial++;el('phone-overlay').style.display='none';el('phone-pin').textContent='';if(restore&&restore.focus)restore.focus();restore=null;}
+el('phone-close').onclick=close;
+window.rsPhoneSync={changed:function(){dirty=true;serial++;pulse();},isOpen:function(){return opened;},handleKey:function(e){e.preventDefault();if(e.keyCode===461||e.keyCode===27||(e.keyCode===13&&!e.repeat))close();},pair:function(){
+ if(opened)return;opened=true;restore=document.activeElement;var stamp=++pairSerial;
+ el('phone-overlay').style.display='block';el('phone-address').textContent=base;el('phone-pin').textContent='Подключение…';el('phone-close').focus();
+ request('pair',null,function(code,p){if(!opened||stamp!==pairSerial)return;if(code===200&&p&&typeof p.pin==='string'){el('phone-pin').textContent=p.pin;}else{el('phone-pin').textContent='Сервер недоступен';}});
 }};
 pulse();setInterval(pulse,6000);
 document.addEventListener('visibilitychange',pulse);document.addEventListener('webkitvisibilitychange',pulse);
