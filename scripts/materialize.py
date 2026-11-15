@@ -25,7 +25,7 @@ elif version == "magic-remote":
     parts.append((root / "services/magic-remote", out / "service"))
 else:
     parts.append((root / "ha-bridge", out / "ha-bridge"))
-if version == "preview":
+if version in ("stable", "preview"):
     local = root / ".local"
     local.chmod(0o700)
     auth = local / "phone-settings.json"
@@ -56,7 +56,7 @@ for src, dest in parts:
         if re.search(r"__RS_[A-Z_]+__", s):
             raise SystemExit("Unresolved placeholder: " + file.name)
         file.write_text(s)
-if version == "preview":
+if version in ("stable", "preview"):
     runtime = out / "phone-settings" / "runtime.json"
     fd = os.open(runtime, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, "w") as f:
@@ -65,7 +65,7 @@ if version == "preview":
 if version in ("stable", "preview"):
     (out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
     (out / "ha-bridge" / "scene-key").chmod(0o600)
-if version == "preview":
+if version in ("stable", "preview"):
     # Private, optional assets fetched from this user's TV; never copy into source.
     icon_dir = out / "app" / "tv-icons"
     if icon_dir.exists():

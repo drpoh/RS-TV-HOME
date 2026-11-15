@@ -171,9 +171,91 @@ body #scenes .tile{height:47px;padding:7px 11px}
 body #tiles .coffee{background:#79503e}
 #tiles .coffee .mark{font-size:34px}
 #tiles .coffee .label{font-size:19px;letter-spacing:-.6px}
+/* RS TV Home 2.0 preview: dock hierarchy, inspired by TV launcher design patterns.
+   No upstream runtime or root-only services. Legacy webOS layout. */
+html,body{background:#101526}
+body,body.theme-blue{background:#101526;background:-webkit-linear-gradient(135deg,#101526,#202c4b 58%,#2d2448)}
+#screen{padding:22px 64px}
+.top{height:79px}
+.brand{font-size:13px;letter-spacing:3.5px;color:#a8b8d7}
+.heading{font-size:37px;font-weight:normal;margin:5px 0 0;letter-spacing:-1px}
+.time{font-size:52px;font-weight:normal;top:-3px}.date{font-size:16px}
+#catalog-button,#settings-button{height:40px;top:14px;background:#27334e;border-radius:20px;border:1px solid #697891;font-size:17px}
+.section{font-size:14px;letter-spacing:2px;margin-bottom:8px;line-height:18px}
+#tiles{margin-bottom:7px}
+body #tiles .tile{height:69px;margin-bottom:10px;padding:7px 13px;border:2px solid #5b6b86;text-align:left;background:#283650;border-radius:14px}
+body #tiles .tile:nth-child(-n+3){height:122px;padding:7px 13px;text-align:center;border:2px solid #637697;border-radius:17px}
+#tiles .tile .mark{display:inline-block;vertical-align:middle;width:44px;height:44px;line-height:44px;margin:0 12px 0 0;color:transparent!important;font-size:0!important;background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important}
+#tiles .tile:nth-child(-n+3) .mark{display:block;width:78px;height:78px;line-height:78px;margin:0 auto 2px}
+#tiles .tile .label{display:inline-block;vertical-align:middle;font-size:22px;line-height:24px;margin:0;max-width:182px;letter-spacing:-.4px}
+#tiles .tile:nth-child(-n+3) .label{display:block;max-width:none;font-size:23px;line-height:26px}
+#tiles .tile.coffee .label{font-size:19px}
+#tiles .tile .detail{display:none}
+body #tiles .ott{background:#174f78}
+body #tiles .youtube{background:#642e48}
+body #tiles .netflix{background:#202338}
+body #tiles .coffee{background:#604438}
+body #tiles .live{background:#244f55}
+body #tiles .family{background:#344e79}
+body #tiles .browser{background:#34486e}
+body #tiles .cast{background:#493f71}
+body #tiles .tile.selected,body #tiles .tile:focus{border:3px solid #fff;padding:6px 12px;background:#50698c;-webkit-box-shadow:0 0 15px rgba(165,205,255,.46);box-shadow:0 0 15px rgba(165,205,255,.46)}
+body #tiles .tile:nth-child(-n+3).selected,body #tiles .tile:nth-child(-n+3):focus{padding:6px 12px}
+.homehead{margin-top:2px}
+.metrics{margin-bottom:10px}
+body .metric{height:59px;padding:5px 14px;border-radius:8px;border:1px solid #485877;background:#25334d}
+.metric-name{font-size:15px;color:#c7d6ef}.metric-value{font-size:27px}
+.panels{margin-bottom:9px}
+body .panel{height:117px;padding:6px 12px;background:#26334c;border:1px solid #536580;border-radius:12px}
+.preview-img{width:178px;height:100px}
+.camera-meta{width:315px}
+.panel-title{font-size:21px}.panel-sub{font-size:14px}
+.chart{height:72px}
+body #scenes .tile{height:47px;border-radius:23px;background:#29464f;text-align:center}
+body #scenes .scene-off{background:#573c4f}
+#scenes .tile .label{font-size:20px}
+.footer{bottom:10px;color:#bfcde7}
+#tiles .tile.ott .mark{background-image:url(icons/ott.svg)!important}
+#tiles .tile.youtube .mark{background-image:url(icons/youtube.svg)!important}
+#tiles .tile.netflix .mark{background-image:url(icons/netflix.svg)!important}
+#tiles .tile.coffee .mark{background-image:url(icons/coffee.svg)!important}
+#tiles .tile.live .mark{background-image:url(icons/live.svg)!important}
+#tiles .tile.family .mark{background-image:url(icons/family.svg)!important}
+#tiles .tile.browser .mark{background-image:url(icons/browser.svg)!important}
+#tiles .tile.cast .mark{background-image:url(icons/cast.svg)!important}
+
 
 /* Six apps: balanced three-column rows. */
 body #tiles .tile{width:366px;margin-right:18px}
 #order-options button{width:366px}
 
-</style></head><body><main id="screen"><header class="top"><div class="brand">RS TV HOME</div><div class="heading">Дом и развлечения</div><div class="sub">Телевидение, фильмы и любимые приложения</div><button type="button" id="catalog-button">Все приложения</button><button type="button" id="settings-button">Настройки</button><div class="time"><span id="clock">--:--</span><div class="date" id="date"></div></div></header><div class="section">ПРИЛОЖЕНИЯ <span id="ha-link" class="hastate">Home Assistant · подключение</span></div><div class="tiles" id="tiles"></div><div class="section homehead">МОЙ ДОМ</div><div class="metrics"><div class="metric"><span class="metric-name">На улице</span><span id="ha-outdoor" class="metric-value">—</span></div><div class="metric"><span class="metric-name">В доме</span><span id="ha-indoor" class="metric-value">—</span></div><div class="metric sauna"><span class="metric-name">Сауна</span><span id="ha-sauna" class="metric-value">—</span></div><div class="metric price"><span class="metric-name">Электричество · сейчас</span><span id="ha-price" class="metric-value">—</span></div></div><div class="panels"><button type="button" class="panel" id="camera-panel"><img id="camera-preview" class="preview-img" alt=""><span class="camera-meta"><span class="panel-title">Камера крыльца</span><span class="panel-sub" id="camera-state">Подключение…</span><span class="panel-sub">Открыть камеру</span></span></button><button type="button" class="panel" id="chart-panel"><span class="panel-title">Nord Pool · сегодня</span><span class="chart-meta" id="price-summary">—</span><canvas id="price-chart" class="chart" width="526" height="110"></canvas></button></div><div class="section scenehead">БЫСТРЫЕ ДЕЙСТВИЯ</div><div class="tiles" id="scenes"></div><div class="status" id="status" role="status"></div><footer class="footer">Стрелки / Magic Remote · OK — открыть <span class="right">HOME — меню LG · v1.7.1</span></footer><div id="panel-overlay"><h2 id="panel-title"></h2><div id="camera-full"><img id="big-camera" alt=""><canvas id="live-camera" width="640" height="360" style="display:none"></canvas></div><div id="chart-full"><canvas id="big-chart" width="1180" height="530"></canvas></div><div class="overlay-footer"><span id="overlay-info"></span><button type="button" id="close-panel">Назад</button></div></div><div id="settings-overlay"><div id="settings-main"><h2>Настройки RS TV Home</h2><p>Цветовая тема и порядок приложений. Изменения сохраняются на телевизоре.</p><h3>Цветовая тема</h3><div class="settings-row" id="theme-options"></div><h3>Приложения · порядок на главном экране</h3><p>Выберите приложение, затем переместите его на одну позицию или в начало.</p><div class="settings-row" id="order-options"></div><div class="settings-row settings-actions" id="move-options"></div><div class="settings-row settings-actions" id="other-options"></div></div><div id="display-settings" style="display:none"><h2>Панель умного дома</h2><p>Выберите показатели и панели на главном экране.</p><h3>Показатели</h3><div class="settings-row" id="display-metrics"></div><h3>Панели</h3><div class="settings-row" id="display-panels"></div><h3>Настройки</h3><div class="settings-row" id="display-actions"></div></div><div class="settings-info" id="settings-info"></div><div class="settings-help">Стрелки — навигация · OK — выбор · BACK — закрыть</div></div><div id="catalog-overlay"><h2>Все приложения</h2><p>Дополнительные установленные приложения · доступность сервисов зависит от поставщика.</p><div id="catalog-apps"></div><div id="catalog-status"></div><div class="catalog-help">Стрелки — выбор · OK — открыть · BACK — назад</div></div></main><script src="catalog.js"></script><script src="settings.js"></script><script src="scenes.js"></script><script src="panels.js"></script><script src="app.js"></script><script src="ha.js"></script></body></html>
+
+/* Compact dropdown, legacy WebKit (no grid or flex). */
+#catalog-overlay,body.theme-violet #catalog-overlay,body.theme-forest #catalog-overlay,body.theme-graphite #catalog-overlay{background:rgba(8,13,25,.36);padding:0}
+#catalog-menu{position:absolute;left:355px;top:77px;width:850px;padding:17px 19px 12px;border:2px solid #8292b0;border-radius:17px;background:#1e2c47;-webkit-box-shadow:0 8px 24px rgba(0,0,0,.5);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#catalog-menu h2{font-size:25px;line-height:28px;margin:0 0 2px}
+#catalog-menu p{font-size:15px;line-height:19px;margin:0 0 10px}
+#catalog-apps{width:808px}
+#catalog-apps button{width:259px;height:58px;margin:0 10px 7px 0;padding:5px 10px;font-size:19px;border-radius:9px;background:#344562}
+#catalog-apps small{font-size:12px;line-height:15px;margin-top:3px}
+#catalog-apps button:focus{padding:4px 9px;background:#59769c;border-color:#fff}
+#catalog-status{font-size:15px;line-height:20px;height:20px}
+#catalog-menu .catalog-help{position:static;font-size:13px;line-height:18px}
+#catalog-arrow{font-size:21px;vertical-align:middle}
+
+#other-options button{width:210px;margin-right:18px;font-size:17px} #settings-info{font-size:17px;line-height:24px}
+#tiles .tile.extra .mark{color:#fff!important;font-size:23px!important;font-weight:bold;background-image:none!important} #tiles .tile.extra{background:#3b5072} #catalog-apps{max-height:420px;overflow:auto} #catalog-apps button:focus{outline:none}
+
+#catalog-button{right:570px;width:154px}
+#settings-button{right:410px;width:150px}
+#phone-button{position:absolute;right:230px;top:14px;width:170px;height:40px;border:1px solid #8eaacb;border-radius:20px;background:#365e82;color:#fff;font:bold 18px Arial;outline:none}
+#phone-button:focus,#phone-button.selected{border:2px solid white;background:#547da9}
+#phone-overlay{display:none;position:absolute;left:0;top:0;width:1280px;height:720px;background:rgba(4,9,20,.84);z-index:90}
+#phone-dialog{position:absolute;left:220px;top:112px;width:840px;padding:30px 40px;background:#202f4a;border:2px solid #8198b9;border-radius:22px;color:white}
+#phone-dialog h2{font-size:34px;margin:0 0 23px}
+#phone-dialog p{font-size:22px;margin:12px 0}
+#phone-address{font-size:29px;line-height:40px;color:#b4dcff;word-wrap:break-word}
+#phone-pin{font-size:42px;line-height:55px;letter-spacing:3px;color:#a9e6cb;min-height:55px}
+#phone-close{display:block;margin-top:20px;width:210px;height:48px;color:white;background:#3d638a;border:2px solid white;border-radius:12px;font:bold 21px Arial}
+
+</style></head><body><main id="screen"><header class="top"><div class="brand">RS TV HOME</div><div class="heading">Дом и развлечения</div><div class="sub">Телевидение, фильмы и любимые приложения</div><button type="button" id="catalog-button" aria-haspopup="true" aria-expanded="false">Приложения <span id="catalog-arrow">&#9662;</span></button><button type="button" id="settings-button">Настройки</button><button type="button" id="phone-button">С телефона</button><div class="time"><span id="clock">--:--</span><div class="date" id="date"></div></div></header><div class="section">ИЗБРАННОЕ И ПРИЛОЖЕНИЯ <span id="ha-link" class="hastate">Home Assistant · подключение</span></div><div class="tiles" id="tiles"></div><div class="section homehead">МОЙ ДОМ</div><div class="metrics"><div class="metric"><span class="metric-name">На улице</span><span id="ha-outdoor" class="metric-value">—</span></div><div class="metric"><span class="metric-name">В доме</span><span id="ha-indoor" class="metric-value">—</span></div><div class="metric sauna"><span class="metric-name">Сауна</span><span id="ha-sauna" class="metric-value">—</span></div><div class="metric price"><span class="metric-name">Электричество · сейчас</span><span id="ha-price" class="metric-value">—</span></div></div><div class="panels"><button type="button" class="panel" id="camera-panel"><img id="camera-preview" class="preview-img" alt=""><span class="camera-meta"><span class="panel-title">Камера крыльца</span><span class="panel-sub" id="camera-state">Подключение…</span><span class="panel-sub">Открыть камеру</span></span></button><button type="button" class="panel" id="chart-panel"><span class="panel-title">Nord Pool · сегодня</span><span class="chart-meta" id="price-summary">—</span><canvas id="price-chart" class="chart" width="526" height="110"></canvas></button></div><div class="section scenehead">БЫСТРЫЕ ДЕЙСТВИЯ</div><div class="tiles" id="scenes"></div><div class="status" id="status" role="status"></div><footer class="footer">Стрелки / Magic Remote · OK — открыть <span class="right">HOME — меню LG · v2.0.6</span></footer><div id="panel-overlay"><h2 id="panel-title"></h2><div id="camera-full"><img id="big-camera" alt=""><canvas id="live-camera" width="640" height="360" style="display:none"></canvas></div><div id="chart-full"><canvas id="big-chart" width="1180" height="530"></canvas></div><div class="overlay-footer"><span id="overlay-info"></span><button type="button" id="close-panel">Назад</button></div></div><div id="settings-overlay"><div id="settings-main"><h2>Настройки RS TV Home</h2><p>Цветовая тема и порядок приложений. Изменения сохраняются на телевизоре.</p><h3>Цветовая тема</h3><div class="settings-row" id="theme-options"></div><h3>Приложения · порядок на главном экране</h3><p>Выберите приложение, затем переместите его на одну позицию или в начало.</p><div class="settings-row" id="order-options"></div><div class="settings-row settings-actions" id="move-options"></div><div class="settings-row settings-actions" id="other-options"></div></div><div id="display-settings" style="display:none"><h2>Панель умного дома</h2><p>Выберите показатели и панели на главном экране.</p><h3>Показатели</h3><div class="settings-row" id="display-metrics"></div><h3>Панели</h3><div class="settings-row" id="display-panels"></div><h3>Настройки</h3><div class="settings-row" id="display-actions"></div></div><div class="settings-info" id="settings-info"></div><div class="settings-help">Стрелки — навигация · OK — выбор · BACK — закрыть</div></div><div id="catalog-overlay"><div id="catalog-menu" role="dialog" aria-label="Приложения"><h2>Приложения</h2><p>Дополнительные приложения</p><div id="catalog-apps"></div><div id="catalog-status"></div><div class="catalog-help">Стрелки — выбор · OK — открыть · BACK — закрыть</div></div></div><div id="phone-overlay" role="dialog" aria-label="Настройки с телефона"><div id="phone-dialog"><h2>Настройки с телефона</h2><p>1. Подключите телефон к домашнему Wi-Fi.</p><p>2. Откройте Chrome и введите адрес:</p><div id="phone-address"></div><p>3. Введите код в поле на открывшейся странице.</p><div id="phone-pin"></div><button type="button" id="phone-close">Закрыть</button></div></div></main><script src="catalog.js"></script><script src="settings.js"></script><script src="scenes.js"></script><script src="panels.js"></script><script src="app.js"></script><script src="ha.js"></script><script src="phone-sync.js"></script></body></html>
