@@ -77,6 +77,16 @@ if version in ("stable", "preview"):
 if version in ("stable", "preview"):
     (out / "ha-bridge" / "scene-key").write_text(cfg["ACTION_KEY"] + chr(10))
     (out / "ha-bridge" / "scene-key").chmod(0o600)
+    lighting = root / ".local" / "lighting.json"
+    dest_lighting = out / "ha-bridge" / "lighting.json"
+    if lighting.exists():
+        if lighting.is_symlink() or lighting.stat().st_mode & 0o077:
+            raise SystemExit("Unsafe lighting configuration")
+        shutil.copyfile(lighting, dest_lighting)
+        dest_lighting.chmod(0o600)
+    elif dest_lighting.exists():
+        dest_lighting.unlink()
+
 if version in ("stable", "preview"):
     # Private, optional assets fetched from this user's TV; never copy into source.
     icon_dir = out / "app" / "tv-icons"

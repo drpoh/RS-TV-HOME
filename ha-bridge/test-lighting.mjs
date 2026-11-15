@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {validateRooms,projectRooms,targetFor} from './lighting.mjs';
+const rooms=validateRooms([{id:'room',label:'Room',lights:[{id:'lamp',label:'Lamp',entity:'light.example'}]}]);
+assert.deepEqual(projectRooms(rooms,{'light.example':{state:'on'}}),[{id:'room',label:'Room',lights:[{id:'lamp',label:'Lamp',state:'on'}]}]);
+assert.equal(projectRooms(rooms,{})[0].lights[0].state,'unavailable');
+assert.deepEqual(targetFor(rooms,'lamp','off'),{entity:'light.example',service:'turn_off'});
+assert.equal(targetFor(rooms,'lamp','toggle'),null);
+assert.equal(targetFor(rooms,'unknown','on'),null);
+assert.throws(()=>validateRooms([{id:'room',label:'Room',lights:[{id:'test',label:'Test',entity:'switch.example'}]}]));
+assert.throws(()=>validateRooms([rooms[0],rooms[0]]));
+console.log('LIGHTING_ALLOWLIST_TEST_OK');

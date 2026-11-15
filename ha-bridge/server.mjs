@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {validateRooms,projectRooms,targetFor} from './lighting.mjs';
 import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
 const runFile=promisify(execFile);
@@ -40,6 +41,50 @@ async function sceneRequest(req,res){
  sceneBusy=true;lastScene=Date.now();
  try{const ok=await serial(()=>activateScene(b.scene));return reply(res,ok?200:502,{ok});}
  catch{return reply(res,502,{ok:false});}finally{sceneBusy=false;}
+}
+let lightRooms=[];
+try{lightRooms=validateRooms(JSON.parse(readFileSync(new URL('./lighting.json',import.meta.url),'utf8')));}catch(e){if(e.code!=='ENOENT')console.warn('Invalid lighting config');}
+const lightEntities=lightRooms.flatMap(r=>r.lights.map(l=>l.entity));
+let lightingBusy=false, lightingRead=null, lightingCache=null, lightingAt=0, lastLightAction=0;
+async function fetchLightStates(){
+ if(!lightEntities.length)return {rooms:[],available:false};
+ try{
+  const c=await connectMcp();
+  const r=await c.callTool({name:'ha_get_state',arguments:{entity_id:lightEntities,fields:['entity_id','state']}},undefined,{timeout:9000});
+  const d=extract(r);
+  if(!d?.states||r.isError)throw Error('Lighting unavailable');
+  return {rooms:projectRooms(lightRooms,d.states),available:true};
+ }catch{return {rooms:projectRooms(lightRooms,{}),available:false};}
+ finally{await closeMcp().catch(()=>{});}
+}
+async function lightingStatus(req,res){
+ if(req.method!=='GET')return reply(res,405,{ok:false});
+ if(lightingCache&&Date.now()-lightingAt<2500)return reply(res,200,lightingCache);
+ if(!lightingRead)lightingRead=serial(fetchLightStates).then(d=>{lightingCache=d;lightingAt=Date.now();return d;}).finally(()=>{lightingRead=null;});
+ return reply(res,200,await lightingRead);
+}
+async function lightingAction(req,res){
+ if(req.socket.remoteAddress!=='__RS_TV_HOST__')return reply(res,403,{ok:false});
+ if(req.method!=='POST')return reply(res,405,{ok:false});
+ if(!String(req.headers['content-type']||'').startsWith('text/plain'))return reply(res,415,{ok:false});
+ let raw='';try{for await(const chunk of req){raw+=chunk.toString();if(raw.length>512)return reply(res,413,{ok:false});}}catch{return reply(res,400,{ok:false});}
+ let b;try{b=JSON.parse(raw);}catch{return reply(res,400,{ok:false});}
+ const target=b&&targetFor(lightRooms,b.id,b.state);
+ if(!target||!keyOK(b.key))return reply(res,403,{ok:false});
+ if(lightingBusy||Date.now()-lastLightAction<500)return reply(res,429,{ok:false});
+ lightingBusy=true;lastLightAction=Date.now();
+ try{
+  const ok=await serial(async()=>{
+   try{
+    const c=await connectMcp();
+    const r=await c.callTool({name:'ha_call_service',arguments:{domain:'light',service:target.service,entity_id:target.entity,wait:false}},undefined,{timeout:12000});
+    let d=r.structuredContent;if(!d&&r.content?.[0]?.text){try{d=JSON.parse(r.content[0].text);}catch{}}
+    return !r.isError&&d?.success===true;
+   }finally{await closeMcp().catch(()=>{});}
+  });
+  lightingCache=null;lightingAt=0;
+  return reply(res,ok?200:502,{ok});
+ }catch{return reply(res,502,{ok:false});}finally{lightingBusy=false;}
 }
 function extract(r){
  let d=r.structuredContent;
@@ -171,6 +216,8 @@ async function cameraRequest(req,res){
 const server=http.createServer(async(req,res)=>{
  if(!allowed.has(req.socket.remoteAddress)){res.writeHead(403);return res.end();}
  if(req.url==='/scene')return sceneRequest(req,res);
+ if(req.url==='/lights')return lightingStatus(req,res);
+ if(req.url==='/light')return lightingAction(req,res);
  if(req.url.split('?')[0]==='/live.jpg')return liveRequest(req,res);
  if(req.url.split('?')[0]==='/camera.jpg')return cameraRequest(req,res);
  if(req.method!=='GET'||!['/status.json','/status.js'].includes(req.url)){res.writeHead(404);return res.end();}
