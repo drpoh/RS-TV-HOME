@@ -1,5 +1,5 @@
 """Local photo/video frame; USB is a read-only source."""
-import hashlib, json, os, re, shutil, stat, subprocess, threading, tempfile
+import hmac, hashlib, json, os, re, shutil, stat, subprocess, threading, tempfile
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ALBUM=Path.home()/'rs-family-photos'
@@ -10,6 +10,50 @@ TV='__RS_TV_HOST__'
 LIMIT=12*1024*1024
 TYPES={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.mp4':'video/mp4'}
 lock=threading.Lock()
+meta_lock=threading.RLock()
+EDIT_KEY='__RS_FRAME_KEY__'
+STATE=Path.home()/'.config/rs-family-frame/frame-state.json'
+
+def metadata():
+    if not STATE.exists():return {"rotations":{}, "hidden":[]}
+    fd=os.open(STATE,os.O_RDONLY|os.O_NOFOLLOW)
+    with os.fdopen(fd) as f:
+        st=os.fstat(f.fileno())
+        if not stat.S_ISREG(st.st_mode) or st.st_uid!=os.getuid() or st.st_mode&0o077:
+            raise OSError("unsafe metadata")
+        data=json.load(f)
+    if not isinstance(data.get("rotations"),dict) or not isinstance(data.get("hidden"),list):
+        raise ValueError("invalid metadata")
+    return data
+
+def save_metadata(data):
+    STATE.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
+    fd,tmp=tempfile.mkstemp(dir=STATE.parent,prefix=".frame-")
+    try:
+        with os.fdopen(fd,"w") as f:
+            json.dump(data,f,separators=(",",":"));f.flush();os.fsync(f.fileno())
+        os.replace(tmp,STATE)
+    finally:
+        if os.path.exists(tmp):os.unlink(tmp)
+
+def edit(data,body,available):
+    op=body.get("op")
+    if op=="restore":
+        if not data["hidden"]:return False
+        data["hidden"].pop();return True
+    key=body.get("id")
+    if not isinstance(key,str) or key not in available:return False
+    if op=="hide":
+        if key not in data["hidden"]:data["hidden"].append(key)
+        return True
+    if op=="rotate":
+        value=body.get("rotation")
+        if type(value) is not int or value not in (0,90,180,270):return False
+        if value:data["rotations"][key]=value
+        else:data["rotations"].pop(key,None)
+        return True
+    return False
+
 
 def entries():
     result={}
@@ -47,7 +91,7 @@ def photo(p):
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,fmt,*args):
-        print(self.client_address[0],fmt%args,flush=True)
+        pass  # No private album IDs or network identifiers in logs.
     def do_HEAD(self):self.serve(False)
     def do_GET(self):self.serve(True)
     def headers_for(self,code,ctype,n,extra=None):
@@ -59,13 +103,35 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options','nosniff')
         for k,v in (extra or {}).items():self.send_header(k,v)
         self.end_headers()
+    def do_POST(self):
+        if self.path!='/api/edit' or self.client_address[0]!=TV:
+            self.send_error(403);return
+        self.connection.settimeout(8)
+        try:
+            size=int(self.headers.get('Content-Length','0'))
+            if self.headers.get('Transfer-Encoding') or not 0<size<=2048 or not self.headers.get('Content-Type','').startswith('text/plain'):
+                self.send_error(400);return
+            b=json.loads(self.rfile.read(size))
+            if not isinstance(b,dict):self.send_error(400);return
+            key=b.get('key')
+            if not isinstance(key,str) or not key.isascii() or not hmac.compare_digest(key,EDIT_KEY):
+                self.send_error(403);return
+            with meta_lock:
+                data=metadata()
+                if not edit(data,b,entries()):self.send_error(400);return
+                save_metadata(data)
+                out=json.dumps({"ok":True,"hiddenCount":len(data["hidden"])}).encode()
+            self.headers_for(200,'application/json',len(out));self.wfile.write(out)
+        except (OSError,ValueError,TypeError):self.send_error(503)
     def serve(self,body):
         if self.client_address[0] not in (TV,HOST,'127.0.0.1'):
             self.send_error(403);return
         try:
             if self.path=='/api/album':
-                e=entries()
-                b=json.dumps({'photos':[k for k,(_,t) in e.items() if t.startswith('image')],'items':[{'id':k,'type':'video' if t.startswith('video') else 'photo'} for k,(_,t) in e.items()],'interval':10}).encode()
+                with meta_lock:
+                    data=metadata()
+                e={k:v for k,v in entries().items() if k not in set(data['hidden'])}
+                b=json.dumps({'photos':[k for k,(_,t) in e.items() if t.startswith('image')],'items':[{'id':k,'type':'video' if t.startswith('video') else 'photo','rotation':data['rotations'].get(k,0)} for k,(_,t) in e.items()],'interval':10,'hiddenCount':len(data['hidden'])}).encode()
                 self.headers_for(200,'application/json',len(b))
                 if body:self.wfile.write(b)
                 return

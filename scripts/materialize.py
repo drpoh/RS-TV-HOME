@@ -45,6 +45,18 @@ if version in ("stable", "preview"):
         raise SystemExit("Invalid local phone configuration")
     cfg["PHONE_TV_KEY"] = private["tv_key"]
     parts.append((root / "services/phone-settings", out / "phone-settings"))
+if version == "family-frame":
+    keyfile = root / ".local/frame-key"
+    if not keyfile.exists():
+        fd = os.open(keyfile, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(secrets.token_hex(32))
+    if keyfile.is_symlink() or keyfile.stat().st_mode & 0o077:
+        raise SystemExit("Unsafe frame key")
+    key = keyfile.read_text().strip()
+    if not re.fullmatch("[a-f0-9]{64}", key):
+        raise SystemExit("Invalid frame key")
+    cfg["FRAME_KEY"] = key
 for src, dest in parts:
     shutil.copytree(src, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "runtime.json"))
     for file in dest.rglob("*"):

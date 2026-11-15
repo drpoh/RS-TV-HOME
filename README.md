@@ -25,3 +25,5 @@ The Magic Remote 1.4.0 TV app and Raspberry Pi services, including Magic Voice 0
 Optional original TV icons: see [local icon sync](docs/tv-icons.md).
 
 Phone settings (Preview): [local setup](docs/phone-settings.md).
+
+Family Frame controls: [player and safe editing](docs/family-frame.md).

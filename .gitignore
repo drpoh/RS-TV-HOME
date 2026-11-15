@@ -46,3 +46,7 @@ voice-probe-result.json
 phone-settings.json
 phone-preferences.json
 runtime.json
+
+frame-key
+frame-state.json
+frame-state.json.tmp

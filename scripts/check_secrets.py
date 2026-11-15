@@ -13,7 +13,7 @@ def blocked(path):
     p = PurePosixPath(path)
     n = p.name.lower()
     return (any(x.lower() in {".local", "dist", "node_modules", ".venv", "__pycache__", ".ssh"} for x in p.parts)
-            or n in {"scene-key", "tv-menu-key", "token", "credentials.json", "secrets.yaml", "secrets.yml", "config.local.json", "tv-registration.json", "upload-auth.json", "upload-auth.new", "phone-settings.json", "phone-preferences.json", "runtime.json", "settings-v2.json", "motion-settings.json", "status.json", "last-result.json", "timings.json", "voice-probe-result.json", "id_rsa", "id_ed25519"}
+            or n in {"scene-key", "frame-key", "frame-state.json", "frame-state.json.tmp", "tv-menu-key", "token", "credentials.json", "secrets.yaml", "secrets.yml", "config.local.json", "tv-registration.json", "upload-auth.json", "upload-auth.new", "phone-settings.json", "phone-preferences.json", "runtime.json", "settings-v2.json", "motion-settings.json", "status.json", "last-result.json", "timings.json", "voice-probe-result.json", "id_rsa", "id_ed25519"}
             or n.startswith(".env") or n.endswith((".pem", ".key", ".p12", ".pfx", ".ipk", ".zip", ".tar.gz", ".log", ".wav", ".pcm", ".raw", ".m4a", ".ogg", ".mp3", ".mp4", ".jpg", ".jpeg", ".webp")))
 RULES = {
     "private-key": re.compile(rb"-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----"),
@@ -35,6 +35,9 @@ def known_values():
     phone = ROOT / ".local/phone-settings.json"
     if phone.is_file():
         values.append(json.loads(phone.read_text()).get("tv_key", ""))
+    frame = ROOT / ".local/frame-key"
+    if frame.is_file():
+        values.append(frame.read_text().strip())
     return [str(v).encode() for v in values
             if isinstance(v, str) and len(v) >= 8 and v not in ("REPLACE_ME", "configure-locally")]
 def inspect(path, data, known):
