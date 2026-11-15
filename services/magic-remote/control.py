@@ -133,8 +133,8 @@ def radio_recover():
     if 'Paired: yes' not in info.stdout or 'Trusted: yes' not in info.stdout:
         return False
     if 'Connected: yes' in info.stdout:
-        subprocess.run(['bluetoothctl','--timeout','6','disconnect',address],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8)
-        time.sleep(.5)
+        # Silence can be normal sleep; never disconnect a healthy paired link.
+        return True
     result=subprocess.run(['bluetoothctl','--timeout','8','connect',address],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=10)
     return result.returncode==0
 
