@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Experimental local LG remote bridge, no kernel module."""
-import argparse, json, math, os, select, statistics, time
+import argparse, json, math, os, select, statistics, time, socket
 from pathlib import Path
 from probe import device, decode
 BASE=Path(__file__).resolve().parent
@@ -24,6 +24,17 @@ def connect():
                 os.chmod(temp,0o600); os.replace(temp,state)
                 print('TV_REGISTERED',flush=True)
         inp=InputControl(c); inp.connect_input()
+        # Bound detection of dead TCP peers without timing out idle reads.
+        for ws in (c,inp.mouse_ws):
+            sock=ws.sock
+            if sock is not None:
+                try:
+                    sock.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
+                    for option,value in (("TCP_KEEPIDLE",15),("TCP_KEEPINTVL",5),("TCP_KEEPCNT",3)):
+                        if hasattr(socket,option):
+                            sock.setsockopt(socket.IPPROTO_TCP,getattr(socket,option),value)
+                except OSError:
+                    pass
         print('POINTER_CONNECTED',flush=True)
         return c,inp
     except BaseException:

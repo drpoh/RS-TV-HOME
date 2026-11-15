@@ -3,6 +3,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from bridge import connect,read_frame,device,METHODS
 from precision_v3 import Precision
+from recovery import SilenceRecovery,WorkerDeadline
 from profiles import PROFILE,RANGES,SPECIAL,APPS,SHORTCUT_DEFAULTS,allowed,motion_of
 BASE=Path(__file__).resolve().parent
 PATH=BASE/'settings-v2.json'
@@ -22,6 +23,7 @@ STATE={'tv':'offline','hid':'waiting','frames':0,'moves':0,'buttons':0,'last_cod
 TOKEN=secrets.token_urlsafe(24)
 TV_KEY=(BASE/'tv-menu-key').read_text().strip()
 TV_IP='__RS_TV_HOST__'
+DEADLINE=WorkerDeadline()
 EXTRA={'VOLUMEUP':'volume_up','VOLUMEDOWN':'volume_down','MUTE':'mute','CHANNELUP':'channel_up','CHANNELDOWN':'channel_down','MENU':'menu','INFO':'info','EXIT':'exit','RED':'red','GREEN':'green','YELLOW':'yellow','BLUE':'blue','PLAY':'play','PAUSE':'pause','STOP':'stop',**{str(i):'num_'+str(i) for i in range(10)}}
 ACTIONS=list(DEFAULT['keys'])+list(EXTRA)+['MODE','NETFLIX','MOVIES','PRIME']
 REPEATABLE=('UP','DOWN','LEFT','RIGHT','VOLUMEUP','VOLUMEDOWN','CHANNELUP','CHANNELDOWN')
@@ -116,9 +118,29 @@ def close(c,inp):
     if c:
         try:c.close()
         except Exception:pass
+def radio_recover():
+    address='__RS_REMOTE_ADDRESS_VARIANT_A__'
+    info=subprocess.run(['bluetoothctl','info',address],capture_output=True,text=True,timeout=4)
+    if 'Paired: yes' not in info.stdout or 'Trusted: yes' not in info.stdout:
+        return False
+    if 'Connected: yes' in info.stdout:
+        subprocess.run(['bluetoothctl','--timeout','6','disconnect',address],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8)
+        time.sleep(.5)
+    result=subprocess.run(['bluetoothctl','--timeout','8','connect',address],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=10)
+    return result.returncode==0
+
+def worker_watchdog():
+    while True:
+        time.sleep(1)
+        if DEADLINE.expired():
+            print('WORKER_WATCHDOG',DEADLINE.stage,flush=True)
+            os._exit(1)
+
 def worker():
     fd=None;c=inp=None;retry=0;bt_retry=0;tv_check=0;lastkey=0;hold=0;nextrepeat=0;lastmove=0;nav_until=0;last=flush=time.monotonic();acc=[0.,0.];sm=[0.,0.];tracker=BiasTracker();motion=Precision();resume=0;profile=None
+    recovery=SilenceRecovery(time.monotonic())
     while True:
+        DEADLINE.arm('loop',10)
         try:
             if fd is None:
                 fd=os.open(device(),os.O_RDONLY|os.O_NONBLOCK)
@@ -134,13 +156,29 @@ def worker():
                     close(c,inp);c=inp=None;setstate(tv='offline');retry=now+3
                     acc=[0.,0.];sm=[0.,0.]
             if inp is None and now>=retry:
+                DEADLINE.arm("tv_connect",75)
                 retry=now+8
                 try:
                     with socket.create_connection(('__RS_TV_HOST__',3000),timeout=1):pass
                     c,inp=connect();setstate(tv='connected');tv_check=time.monotonic()+15;last=time.monotonic();acc=[0.,0.];sm=[0.,0.]
                 except Exception:close(c,inp);c=inp=None;setstate(tv='offline')
+            DEADLINE.arm("hid_read",10)
             d=read_frame(fd,.15);now=time.monotonic()
-            if d is None: continue
+            if d is None:
+                action=recovery.action(now)
+                if action:
+                    os.close(fd);fd=None;lastkey=0;motion.reset()
+                    setstate(hid='recovering',error='')
+                    if action=='reopen':
+                        print('HID_REOPEN_AFTER_SILENCE',flush=True)
+                    else:
+                        DEADLINE.arm('bluetooth_reconnect',35)
+                        print('HID_RADIO_RECOVERY',flush=True)
+                        try:radio_recover()
+                        except (OSError,subprocess.TimeoutExpired):pass
+                    # A new valid HID report re-arms the silence policy.
+                continue
+            recovery.report(now)
             elapsed=now-last;last=now
             if elapsed>.10:
                 motion.reset();acc=[0.,0.];flush=now
@@ -183,6 +221,7 @@ def worker():
                     STATE['last_action']='MODE';STATE['key_counts']['MODE']=STATE['key_counts'].get('MODE',0)+1
                 cfg['pointer']=SET['pointer'];acc=[0.,0.];sm=[0.,0.]
             if inp:
+                DEADLINE.arm('tv_send',10)
                 try:
                     if (edge or repeat) and action and action!='MODE':
                         if action in SPECIAL and cfg['shortcuts'].get(action,'none')!='native':
@@ -215,6 +254,7 @@ def worker():
                     close(c,inp);c=inp=None;setstate(tv='offline');retry=now+3
             lastkey=key
         except (OSError,RuntimeError) as e:
+            DEADLINE.arm("hid_recovery",35)
             if fd is not None:os.close(fd);fd=None
             denied=isinstance(e,PermissionError)
             setstate(hid='waiting',error='HID permission denied' if denied else 'HID not available')
@@ -238,6 +278,7 @@ def main():
     os.umask(0o077)
     with LOCK:save(commit=True)
     server=ThreadingHTTPServer((HOST,PORT),Handler)
+    threading.Thread(target=worker_watchdog,daemon=True).start()
     threading.Thread(target=supervised_worker,daemon=True).start()
     print('CALIBRATION_MENU_READY',flush=True)
     server.serve_forever()
