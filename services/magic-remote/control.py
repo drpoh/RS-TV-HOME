@@ -1,4 +1,4 @@
-import json, os, time, threading, secrets, socket, select, math, subprocess, collections
+import re, json, os, time, threading, secrets, socket, select, math, subprocess, collections
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from bridge import connect,read_frame,device,METHODS
@@ -24,6 +24,7 @@ TOKEN=secrets.token_urlsafe(24)
 TV_KEY=(BASE/'tv-menu-key').read_text().strip()
 TV_IP='__RS_TV_HOST__'
 DEADLINE=WorkerDeadline()
+RADIO={"connected":False,"battery":None,"rssi":None}
 EXTRA={'VOLUMEUP':'volume_up','VOLUMEDOWN':'volume_down','MUTE':'mute','CHANNELUP':'channel_up','CHANNELDOWN':'channel_down','MENU':'menu','INFO':'info','EXIT':'exit','RED':'red','GREEN':'green','YELLOW':'yellow','BLUE':'blue','PLAY':'play','PAUSE':'pause','STOP':'stop',**{str(i):'num_'+str(i) for i in range(10)}}
 ACTIONS=list(DEFAULT['keys'])+list(EXTRA)+['MODE','NETFLIX','MOVIES','PRIME']
 REPEATABLE=('UP','DOWN','LEFT','RIGHT','VOLUMEUP','VOLUMEDOWN','CHANNELUP','CHANNELDOWN')
@@ -67,6 +68,14 @@ class Handler(BaseHTTPRequestHandler):
         if self.client_address[0]==TV_IP:self.send_header('Access-Control-Allow-Origin','*')
         self.send_header('Content-Type',typ);self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
     def do_GET(self):
+        if self.path=='/api/indicator':
+            if self.client_address[0] not in (TV_IP,HOST,'127.0.0.1'):
+                self.reply({},code=403);return
+            with LOCK:
+                data=dict(RADIO)
+                data["ready"]=STATE["hid"]=="connected" and STATE["tv"]=="connected" and RADIO["connected"]
+                data["pointer"]=bool(SET.get("pointer"))
+            self.reply(data);return
         if self.path=='/':self.reply((BASE/'menu.html').read_text().replace('__TOKEN__',TOKEN).encode(),'text/html; charset=utf-8')
         elif self.path=='/api/status':self.reply(snapshot())
         else:self.reply({},code=404)
@@ -128,6 +137,25 @@ def radio_recover():
         time.sleep(.5)
     result=subprocess.run(['bluetoothctl','--timeout','8','connect',address],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=10)
     return result.returncode==0
+
+def radio_monitor():
+    address='__RS_REMOTE_MAC__'
+    while True:
+        result={"connected":False,"battery":None,"rssi":None}
+        try:
+            p=subprocess.run(['bluetoothctl','info',address],capture_output=True,text=True,timeout=4)
+            result["connected"]='Connected: yes' in p.stdout
+            if result["connected"]:
+                battery=re.search(r'Battery Percentage:.*?\((\d+)\)',p.stdout)
+                if battery and 0<=int(battery[1])<=100:result["battery"]=int(battery[1])
+                try:
+                    p=subprocess.run(['hcitool','rssi',address],capture_output=True,text=True,timeout=3)
+                    m=re.search(r'RSSI return value:\s*(-?\d+)',p.stdout)
+                    if p.returncode==0 and m and -127<int(m[1])<0:result["rssi"]=int(m[1])
+                except (OSError,subprocess.TimeoutExpired):pass
+        except (OSError,subprocess.TimeoutExpired):pass
+        with LOCK:RADIO.update(result)
+        time.sleep(12)
 
 def worker_watchdog():
     while True:
@@ -278,6 +306,7 @@ def main():
     os.umask(0o077)
     with LOCK:save(commit=True)
     server=ThreadingHTTPServer((HOST,PORT),Handler)
+    threading.Thread(target=radio_monitor,daemon=True).start()
     threading.Thread(target=worker_watchdog,daemon=True).start()
     threading.Thread(target=supervised_worker,daemon=True).start()
     print('CALIBRATION_MENU_READY',flush=True)

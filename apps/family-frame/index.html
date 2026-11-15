@@ -26,6 +26,18 @@
 #confirm button:focus{border:3px solid white;background:#547ca5}#confirm #yes{background:#783e46}
 #clock,#notice,#bar{z-index:3}
 #input-surface{position:absolute;left:0;top:0;width:100%;height:100%;z-index:2;outline:none;background:transparent} #clock,#notice{pointer-events:none} #video{pointer-events:none}
+
+.remote-indicator{display:inline-block;color:#d7e5f7;font:15px Arial;white-space:nowrap;line-height:20px;vertical-align:middle}
+.remote-battery{display:inline-block;vertical-align:middle;width:24px;height:12px;border:1px solid #cfdfef;border-radius:3px;padding:1px;position:relative;margin-right:4px}
+.remote-battery:after{position:absolute;right:-4px;top:3px;width:2px;height:4px;background:#cfdfef;content:''}
+#remote-charge-fill{display:block;height:8px;width:0;background:#a4e7c1;border-radius:1px}
+#remote-charge{margin-right:7px}
+.remote-signal{display:inline-block;vertical-align:middle;height:15px;margin-right:5px}
+.remote-signal i{display:inline-block;width:3px;margin-right:2px;background:#6c7887;vertical-align:bottom}
+.remote-signal i:nth-child(1){height:4px}.remote-signal i:nth-child(2){height:7px}.remote-signal i:nth-child(3){height:10px}.remote-signal i:nth-child(4){height:14px}
+.bars-1 i:first-child,.bars-2 i:nth-child(-n+2),.bars-3 i:nth-child(-n+3),.bars-4 i{background:#a4e7c1}
+.remote-indicator.offline #remote-state{color:#ffb0a8}
+#remote-indicator{position:absolute;left:35px;top:34px;z-index:4;padding:5px 8px;border-radius:7px;background:rgba(0,0,0,.5);pointer-events:none}
 </style></head>
-<body><div id="p0" class="photo"></div><div id="p1" class="photo"></div><video tabindex="-1" id="video" class="hidden" preload="auto"></video><div id="empty"><h1>Семейная фоторамка</h1><p id="message">Подключение к домашнему альбому...</p></div><div id="input-surface" tabindex="-1" aria-label="Управление фоторамкой"></div><div id="clock"></div><div id="notice"></div><div id="bar" role="button">← → Назад / далее　 OK Пауза　 ↑ ↓ Меню　 BACK Выход <span id="count"></span></div>
-<div id="menu" class="hidden"><div id="menu-title">Управление фоторамкой · 1.2.1</div><div id="actions"></div><div id="menu-note"></div></div><div id="confirm" class="hidden"><div id="confirm-box"><h2>Удалить из показа?</h2><p>Оригинал останется на диске. Файл можно вернуть.</p><button id="no">Отмена</button><button id="yes">Удалить из показа</button></div></div><script src="player.js"></script></body></html>
+<body><div id="p0" class="photo"></div><div id="p1" class="photo"></div><video tabindex="-1" id="video" class="hidden" preload="auto"></video><div id="empty"><h1>Семейная фоторамка</h1><p id="message">Подключение к домашнему альбому...</p></div><div id="input-surface" tabindex="-1" aria-label="Управление фоторамкой"></div><div id="remote-indicator" class="remote-indicator offline"><span class="remote-battery"><span id="remote-charge-fill"></span></span><span id="remote-charge">—%</span><span id="remote-signal" class="remote-signal bars-0"><i></i><i></i><i></i><i></i></span><span id="remote-state">Пульт</span></div><div id="clock"></div><div id="notice"></div><div id="bar" role="button">← → Назад / далее　 OK Пауза　 ↑ ↓ Меню　 BACK Выход <span id="count"></span></div>
+<div id="menu" class="hidden"><div id="menu-title">Управление фоторамкой · 1.2.2</div><div id="actions"></div><div id="menu-note"></div></div><div id="confirm" class="hidden"><div id="confirm-box"><h2>Удалить из показа?</h2><p>Оригинал останется на диске. Файл можно вернуть.</p><button id="no">Отмена</button><button id="yes">Удалить из показа</button></div></div><script src="player.js"></script><script src="remote-indicator.js"></script></body></html>
