@@ -66,3 +66,51 @@ be added to each existing orientation if using metadata, rather than
 unconditionally replacing all matrices with -90. HEVC native compatibility on
 the 2014 LG remains unverified. Don't mass-transcode on the Pi 3 until native
 display orientation and throughput are confirmed.
+
+## Next validation (same date): HEVC and playback-compatible alternatives
+
+The SSAP screenshot request returned 404 (no service or method) on this 2014 TV.
+Developer shell via ares-novacom runs as the unprivileged prisoner account;
+luna-send screenshot actions were denied (exit code 126). Native SmartShare's
+actual onscreen orientation cannot be inferred from the downloaded file or
+AVTransport. A person viewing the TV must still confirm the displayed angle.
+
+The 16 source HEVC MP4 files are about 1.7–12.3 seconds. The longest tested
+HEVC is 1280x720, 10-bit Main 10. In a native LG trial, the transport entered
+PLAYING but stayed there for over 38 seconds on a 12.3-second file, and only
+part of the file was requested. Playback was therefore not confirmed.
+A test H.264 8-bit copy of the same source (preserving AAC audio, rotating
+pixel frames and clearing the output's stale display matrix) was streamed in
+full and transitioned to STOPPED after approximately 20.5 seconds. The family
+frame then returned. Preparing that HEVC sample took approximately 68.5 seconds
+on the Pi 3. This does not prove compatibility of every HEVC source.
+
+Added scripts/prepare_native_video.py: a SINGLE-video opt-in cache builder.
+It reads the original rotation with ffprobe and applies an EXTRA clockwise
+quarter-turn. For H.264 the metadata strategy uses stream copy with faststart,
+adjusting the existing matrix. For a pixel-rotated fallback (including HEVC),
+FFmpeg auto-normalizes any existing display matrix before transpose=clock;
+a second stream-copy pass clears stale rotation metadata. All outputs are
+private cached MP4s, never written to the USB. It has a disk-space guard,
+temporary-file cleanup, duration checks and conservative process priority.
+No automatic all-video conversion is enabled.
+
+Example dry-run of the smallest source video:
+
+    python3 scripts/prepare_native_video.py --rank 212
+
+Example explicit preparation of a single video:
+
+    python3 scripts/prepare_native_video.py --rank 212 --mode pixels --run
+
+Tests:
+
+    python3 scripts/test_prepare_native_video.py
+    python3 scripts/test_smartshare_rotation_probe.py
+
+The 0.5-second H.264 test input with original display angle -90 was correctly
+stream-copied to a -180 display-matrix output and physically normalized plus
+rotated to an H.264 output with no rotation matrix. The second strategy is
+slower and changes video compression. The metadata-only strategy has not
+yet been visually confirmed on this legacy LG. Production hybrid autoplay
+remains disabled until that and error recovery are verified.

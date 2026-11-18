@@ -98,7 +98,7 @@ def native_payload(url):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["metadata", "pixels", "both"], default="both")
+    parser.add_argument("--mode", choices=["metadata", "pixels", "hevc", "hevc-h264", "both"], default="both")
     args = parser.parse_args()
     c = json.loads((PROJECT / ".local/config.json").read_text())
     alias = c["TV_DEVICE_ALIAS"]
@@ -106,6 +106,15 @@ def main():
         "/meta.mp4": WORK / "rotate-meta-cw90.mp4",
         "/pixels.mp4": WORK / "rotate-pixels-cw90.mp4",
     }
+    if args.mode == "hevc-h264":
+        routes["/hevc-h264.mp4"] = WORK / "hevc-h264-cw90-cleared.mp4"
+    if args.mode == "hevc":
+        sample = json.loads((WORK / "hevc-source.json").read_text())
+        source = Path(sample["source"])
+        usb = Path(c["FAMILY_USB_PATH"])
+        if source.parent.resolve() != usb.resolve() or source.suffix.lower() != ".mp4":
+            raise SystemExit("HEVC trial must use a video from the configured USB root")
+        routes["/hevc.mp4"] = source
     if any(not f.is_file() or f.is_symlink() for f in routes.values()):
         raise SystemExit("Missing prepared sample file")
     endpoint, service = get_renderer(c["TV_HOST"])
@@ -119,7 +128,7 @@ def main():
     modes = (["metadata", "pixels"] if args.mode == "both" else [args.mode])
     try:
         for mode in modes:
-            route = "/meta.mp4" if mode == "metadata" else "/pixels.mp4"
+            route = { "metadata": "/meta.mp4", "pixels": "/pixels.mp4", "hevc": "/hevc.mp4", "hevc-h264": "/hevc-h264.mp4" }[mode]
             url = f"http://{c['BRIDGE_HOST']}:{PORT}{route}"
             was_playing = False
             stopped = False
