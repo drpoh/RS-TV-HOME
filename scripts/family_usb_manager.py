@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal read-only hot-swap mount manager for removable USB media.
+"""Read/write-capable hot-swap mount manager for removable USB media.
 
 Designed for an explicitly-installed, root-owned systemd service. Scans only
 USB block devices, leaves unrelated mounted devices alone and never writes to
@@ -61,27 +61,46 @@ def current_mount():
             'readonly': 'ro' in pieces[2].split(',')}
 
 
-def mount_options(fstype):
-    common='ro,nosuid,nodev,noexec'
-    if fstype in ('vfat', 'exfat', 'ntfs', 'ntfs3'):
-        return common+',uid=1000,gid=1000'
+def mount_options(fstype, mode='ro'):
+    """Always prevent executable/setuid/device files; only mode affects writes."""
+    if mode not in ('rw','ro'):
+        raise ValueError('Invalid USB mount mode')
+    common=mode+',nosuid,nodev,noexec'
+    if fstype == 'vfat':
+        return common+',uid=1000,gid=1000,umask=0022,utf8'
+    if fstype in ('exfat','ntfs','ntfs3'):
+        return common+',uid=1000,gid=1000,umask=0022'
     return common
 
 
 def reconcile(devices, mounted, readonly_check=lambda: True, call=run,
-              observed_uuid=None):
+              observed_uuid=None, mode='ro'):
     """Pure-ish decision engine; bounded calls and conservative decisions.
 
     Returns status rather than trying to pick a drive if more than one eligible
     USB is present. A current mount is retained while its partition exists.
     """
+    if mode not in ('ro', 'rw'):
+        raise ValueError('Invalid USB mount mode')
     candidates=[d for d in devices if not d['mounted_elsewhere']]
     if mounted:
         for d in devices:
-            if (d['path'] == mounted['path'] and mounted['readonly']
-                    and readonly_check()
-                    and (not observed_uuid or not d['uuid'] or observed_uuid==d['uuid'])):
-                return 'existing-mount-preserved'
+            same_device = (
+                d['path'] == mounted['path'] and readonly_check()
+                and (not observed_uuid or not d['uuid']
+                     or observed_uuid == d['uuid'])
+            )
+            if same_device:
+                if mounted['readonly'] == (mode == 'ro'):
+                    return 'existing-mount-preserved'
+                # Changing an existing flash from RO to RW is allowed only
+                # after the administrator enabled RW in the root service.
+                # Do not bypass filesystem write protection or a dirty volume.
+                options = 'remount,'+mount_options(d['fstype'], mode)
+                result=call(['/usr/bin/mount','-o',options,str(TARGET)],timeout=20)
+                if result.returncode:
+                    return 'remount-failed'
+                return 'remounted-readwrite' if mode == 'rw' else 'remounted-readonly'
         # Stale, removed or writable mount: do not force-unmount an unknown device.
         if not mounted['path'].startswith('/dev/sd'):
             return 'foreign-mount-left-alone'
@@ -100,9 +119,9 @@ def reconcile(devices, mounted, readonly_check=lambda: True, call=run,
         return 'no-usb' if not candidates else 'multiple-usb-select-manually'
     selected=candidates[0]
     result=call(['/usr/bin/mount', '-t', selected['fstype'],
-                 '-o', mount_options(selected['fstype']),
+                 '-o', mount_options(selected['fstype'], mode),
                  selected['path'], str(TARGET)], timeout=20)
-    return 'mounted-readonly' if not result.returncode else 'mount-failed'
+    return ('mounted-readwrite' if mode == 'rw' else 'mounted-readonly') if not result.returncode else 'mount-failed'
 
 
 def ready():
@@ -126,12 +145,31 @@ def mount_readable():
         return False
 
 
+def configured_mode():
+    value=os.environ.get('RS_FAMILY_USB_MODE')
+    if value is None:
+        try:
+            content=Path('/etc/default/rs-family-usb').read_text().strip()
+            if content.startswith('RS_FAMILY_USB_MODE='):
+                value=content.split('=',1)[1]
+        except OSError:
+            pass
+    mode=(value or 'ro').strip().lower()
+    if mode not in ('ro','rw'):
+        raise ValueError('Invalid RS_FAMILY_USB_MODE')
+    return mode
+
+
 def main():
+    mode=configured_mode()
+    if mode not in ('ro','rw'):
+        raise SystemExit('Invalid RS_FAMILY_USB_MODE')
     if '--check' in sys.argv[1:]:
         devices=discover()
         mounted=current_mount()
         print('USB_SOURCE_CHECK', 'usb_disks', len(devices),
-              'current_readonly', bool(mounted and mounted['readonly']),
+              'mount_mode_configured',mode,
+              'current_mode', ('ro' if mounted and mounted['readonly'] else 'rw' if mounted else 'none'),
               'current_is_supported',
               bool(mounted and any(d['path']==mounted['path'] for d in devices)))
         return
@@ -145,8 +183,9 @@ def main():
             devices=discover()
             mounted=current_mount()
             status=reconcile(devices,mounted,readonly_check=mount_readable,
-                             observed_uuid=previous_uuid)
-            if status in ('existing-mount-preserved','mounted-readonly'):
+                             observed_uuid=previous_uuid,mode=mode)
+            if status in ('existing-mount-preserved','mounted-readonly',
+                          'mounted-readwrite','remounted-readwrite','remounted-readonly'):
                 current=current_mount()
                 if current:
                     previous_uuid=next((d['uuid'] for d in devices

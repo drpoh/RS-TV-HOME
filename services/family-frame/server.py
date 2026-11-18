@@ -135,10 +135,28 @@ video_queued=set()
 video_queued_lock=threading.Lock()
 video_failures={}
 
-def video_cache_path(p):
+def media_cache_fingerprint(p):
+    """Keep private cached media distinct across swapped USB drives.
+
+    FAT timestamps and names can coincide across drives. Sample start, middle
+    and end of the source without reading multi-GB files on Raspberry Pi 3.
+    """
     s=p.stat()
-    fingerprint=hashlib.sha256(os.fsencode(p)+str((s.st_size,s.st_mtime_ns)).encode()).hexdigest()
-    return VIDEO_CACHE/(fingerprint+'.mp4')
+    hasher=hashlib.sha256(os.fsencode(p)+str((s.st_size,s.st_mtime_ns)).encode())
+    fd=os.open(p,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+    with os.fdopen(fd,'rb') as file:
+        current=os.fstat(file.fileno())
+        if not stat.S_ISREG(current.st_mode) or current.st_size!=s.st_size:
+            raise OSError('media changed during cache fingerprint')
+        offsets=sorted({0,max(0,s.st_size//2-16384),max(0,s.st_size-32768)})
+        for offset in offsets:
+            file.seek(offset)
+            hasher.update(file.read(32768))
+    return hasher.hexdigest()
+
+
+def video_cache_path(p):
+    return VIDEO_CACHE/(media_cache_fingerprint(p)+'.mp4')
 
 def video_cache_ready(out):
     try:
@@ -192,8 +210,7 @@ def video_cache_worker():
 
 def photo(p):
     if not p.is_relative_to(USB):return p,TYPES[p.suffix.lower()]
-    s=p.stat()
-    name=hashlib.sha256(os.fsencode(p)+str((s.st_size,s.st_mtime_ns)).encode()).hexdigest()
+    name=media_cache_fingerprint(p)
     out=CACHE/(name+'.jpg')
     with lock:
         if not out.is_file():

@@ -95,3 +95,65 @@ These scripts were unit-tested without touching /etc/fstab:
 The manager is a prepared capability, **not installed or enabled** by the
 user-level remote account. It requires administrator installation and a
 real unplug/replug test before full USB swap support is confirmed.
+
+### Writable USB support (optional admin activation)
+
+The removable USB manager now supports **RW** as well as **RO** mounting.
+The new installer defaults to **RW**, but has not been executed on the Pi:
+the remote project account cannot use passwordless sudo. The current flash
+therefore remains mounted read-only under the existing UUID-specific fstab
+entry until an administrator enables the manager.
+
+One-time setup, using a Pi terminal with administrative access:
+
+    cd ~/projects/RS-TV-HOME
+    sudo bash scripts/install_family_usb_hotplug.sh rw
+
+The installer backs up fstab, replaces the fixed-UUID mount rule with a
+separate service, and selects the RW mode in /etc/default/rs-family-usb.
+For a *currently mounted* USB, the manager tries a normal remount to RW
+without disconnecting the photo frame. A write-protected/unclean filesystem
+that refuses RW is **not** force-mounted. Different, supported USB sticks
+can then mount at the same /mnt/family-usb path. The manager never mounts
+the Pi boot card or chooses arbitrarily between multiple USB devices.
+
+Switch back to read-only or writable mode at any time:
+
+    sudo bash scripts/set_family_usb_mode.sh ro
+    sudo bash scripts/set_family_usb_mode.sh rw
+
+Check the actual mode, rather than trusting the configuration alone:
+
+    findmnt -n -T /mnt/family-usb -o TARGET,FSTYPE,OPTIONS
+    python3 scripts/family_usb_manager.py --check
+
+**Safely eject before physically removing any writable USB drive**:
+
+    sudo bash scripts/eject_family_usb.sh
+
+This stops automatic remounting, flushes disk writes and performs a
+non-lazy unmount. On success remove the drive. After inserting another:
+
+    sudo systemctl start rs-family-usb-manager.service
+
+Never simply pull out an RW flash drive during a transfer. Supported
+filesystem types are FAT32, exFAT, NTFS and ext4. FAT/exFAT/NTFS mounts
+assign files to the normal Pi user; ext4 keeps its Linux ownership and
+permission bits, so some external ext4 drives may require manual permissions
+before the Pi user can write. No existing files are modified automatically.
+The photo frame's current view/delete/remove-from-view logic continues to
+read the USB source and write album state or optimized media copies only
+on the Pi; enabling RW does not by itself create a network upload/share.
+
+To return to the original UUID-specific mounting configuration:
+
+    sudo bash scripts/uninstall_family_usb_hotplug.sh
+
+The uninstall script attempts to remount the current drive read-only and
+retains the restored fstab in its original location. The archived pre-change
+fstab backup remains under /etc/fstab.rs-family-usb-original.restored.
+
+The root installation is deliberately optional; all mount selector tests
+are executed with mocked system commands, never touching real flash media:
+
+    python3 scripts/test_family_usb_manager.py

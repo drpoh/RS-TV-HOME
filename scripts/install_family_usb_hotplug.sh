@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
-# ONE-TIME ADMINISTRATOR ACTION. Not executed by the user-level agent.
+# ONE-TIME ADMINISTRATOR ACTION. Defaults to read/write for user's media.
 set -euo pipefail
 if [[ $EUID -ne 0 ]]; then
   echo "This installer needs sudo. No changes were made." >&2
   exit 77
+fi
+MODE="${1:-rw}"
+if [[ "$MODE" != "rw" && "$MODE" != "ro" || $# -gt 1 ]]; then
+  echo "Usage: sudo bash $0 [rw|ro]" >&2
+  exit 64
 fi
 TARGET=/mnt/family-usb
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 SCRIPT="$SCRIPT_DIR/family_usb_manager.py"
 LIBEXEC=/usr/local/libexec/rs-family-usb-manager.py
 UNIT=/etc/systemd/system/rs-family-usb-manager.service
+MODE_FILE=/etc/default/rs-family-usb
 BACKUP=/etc/fstab.rs-family-usb-original
 [[ -f "$SCRIPT" && -d "$TARGET" && ! -L "$TARGET" ]] || { echo "Missing or untrusted source"; exit 1; }
-if [[ -e "$UNIT" || -e "$LIBEXEC" ]]; then
+if [[ -e "$UNIT" || -e "$LIBEXEC" || -e "$MODE_FILE" ]]; then
   echo "Manager is already installed; refusing to overwrite." >&2
   exit 2
 fi
@@ -30,7 +36,7 @@ rollback_on_failure() {
     echo "USB manager installation incomplete, restoring original fstab" >&2
     cp "$BACKUP" /etc/fstab
     systemctl disable --now rs-family-usb-manager.service >/dev/null 2>&1 || true
-    rm -f "$UNIT" "$LIBEXEC"
+    rm -f "$UNIT" "$LIBEXEC" "$MODE_FILE"
     systemctl daemon-reload || true
   fi
 }
@@ -49,13 +55,17 @@ lines[n]='# RS family USB auto-manager replaced the old UUID-specific entry\n# '
 p.write_text(''.join(lines))
 PY
 install -D -m 0755 -o root -g root "$SCRIPT" "$LIBEXEC"
+printf 'RS_FAMILY_USB_MODE=%s\n' "$MODE" > "$MODE_FILE"
+chown root:root "$MODE_FILE"
+chmod 0644 "$MODE_FILE"
 cat > "$UNIT" <<'EOF'
 [Unit]
-Description=RS Family USB read-only removable media manager
+Description=RS Family USB removable media manager (configurable RO/RW)
 After=local-fs.target
 ConditionPathIsDirectory=/mnt/family-usb
 [Service]
 Type=simple
+EnvironmentFile=/etc/default/rs-family-usb
 ExecStart=/usr/bin/python3 /usr/local/libexec/rs-family-usb-manager.py
 Restart=always
 RestartSec=10
@@ -73,6 +83,8 @@ if ! systemctl is-active --quiet rs-family-usb-manager.service; then
 fi
 installed=1
 trap - EXIT
-echo "Hot-swap manager installed. Original fstab is backed up at $BACKUP"
+echo "Hot-swap manager installed. Selected mount mode: $MODE"
+echo "Original fstab is backed up at $BACKUP"
+echo "To switch mode: sudo bash $SCRIPT_DIR/set_family_usb_mode.sh rw|ro"
 echo "Rollback: sudo systemctl disable --now rs-family-usb-manager.service;"
 echo "          sudo cp $BACKUP /etc/fstab; sudo systemctl daemon-reload"

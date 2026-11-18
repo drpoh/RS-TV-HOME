@@ -24,6 +24,66 @@ class MountTests(unittest.TestCase):
         self.assertEqual(len(actions),1)
         self.assertEqual(actions[0][-2:],['/dev/sdz1','/mnt/family-usb'])
 
+    def test_rw_mode_mounts_new_usb_with_owner_and_safety(self):
+        actions=[]
+        def fake(cmd,timeout=12):
+            actions.append(cmd)
+            return subprocess.CompletedProcess(cmd,0,'','')
+        self.assertEqual(reconcile([USB()],None,call=fake,mode='rw'),
+                         'mounted-readwrite')
+        command=actions[0]
+        self.assertEqual(command[-2:],['/dev/sdz1','/mnt/family-usb'])
+        options=command[command.index('-o')+1].split(',')
+        for wanted in ('rw','nosuid','nodev','noexec','uid=1000','gid=1000'):
+            self.assertIn(wanted,options)
+        self.assertNotIn('ro',options)
+
+    def test_rw_mode_remounts_existing_readonly_usb(self):
+        existing={'path':'/dev/sdz1','fstype':'vfat','readonly':True}
+        calls=[]
+        def fake(cmd,timeout=12):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd,0,'','')
+        self.assertEqual(reconcile([USB()],existing,call=fake,mode='rw'),
+                         'remounted-readwrite')
+        self.assertEqual(calls[0][:2],['/usr/bin/mount','-o'])
+        self.assertIn('remount,rw',calls[0][2])
+        self.assertEqual(calls[0][-1],'/mnt/family-usb')
+
+    def test_rw_mode_preserves_existing_writable_usb(self):
+        existing={'path':'/dev/sdz1','fstype':'vfat','readonly':False}
+        def invalid(*args,**kwargs):
+            raise AssertionError('No remount should run')
+        self.assertEqual(reconcile([USB()],existing,call=invalid,mode='rw'),
+                         'existing-mount-preserved')
+
+    def test_ro_mode_restored_from_rw(self):
+        existing={'path':'/dev/sdz1','fstype':'vfat','readonly':False}
+        calls=[]
+        def fake(cmd,timeout=12):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd,0,'','')
+        self.assertEqual(reconcile([USB()],existing,call=fake,mode='ro'),
+                         'remounted-readonly')
+        self.assertIn('remount,ro',calls[0][2])
+
+    def test_readonly_write_protected_does_not_force(self):
+        existing={'path':'/dev/sdz1','fstype':'vfat','readonly':True}
+        calls=[]
+        def failure(cmd,timeout=12):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd,32,'','write protected')
+        self.assertEqual(reconcile([USB()],existing,call=failure,mode='rw'),
+                         'remount-failed')
+        self.assertEqual(len(calls),1)
+        self.assertNotIn('force',calls[0][2])
+
+    def test_invalid_mode_refused(self):
+        with self.assertRaises(ValueError):
+            mount_options('vfat','invalid')
+        with self.assertRaises(ValueError):
+            reconcile([USB()],None,mode='invalid')
+
     def test_existing_readonly_remains_untouched(self):
         mount={'path':'/dev/sdz1','fstype':'vfat','readonly':True}
         with mock.patch('family_usb_manager.run',side_effect=AssertionError('mutation')):

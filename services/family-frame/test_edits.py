@@ -36,6 +36,21 @@ class Edits(unittest.TestCase):
             self.assertEqual(cached.stat().st_mode & 0o777,0o600)
             self.assertEqual(m.VIDEO_CACHE.stat().st_mode & 0o777,0o700)
 
+    def test_video_cache_detects_same_name_size_and_timestamp_changed_bytes(self):
+        spec=importlib.util.spec_from_file_location('frame_cache_identity',Path(__file__).with_name('server.py'))
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp)/'same-name.mp4'
+            p.write_bytes(b'first_content')
+            old=p.stat()
+            old_cache=m.video_cache_path(p)
+            p.write_bytes(b'other_content')
+            import os
+            os.utime(p,ns=(old.st_atime_ns,old.st_mtime_ns))
+            self.assertEqual(p.stat().st_size,old.st_size)
+            self.assertEqual(p.stat().st_mtime_ns,old.st_mtime_ns)
+            self.assertNotEqual(m.video_cache_path(p),old_cache)
+
     def test_replace_flash_and_updated_files(self):
         """Same-name replacements, vanished drives and nested folders."""
         spec=importlib.util.spec_from_file_location("frame_dynamic",Path(__file__).with_name("server.py"))
