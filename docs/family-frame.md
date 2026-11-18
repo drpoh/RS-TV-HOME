@@ -27,3 +27,71 @@ All video files play until the media element reports native `ended` (or the user
 Every video's displayed orientation includes a permanent +90-degree clockwise baseline. Per-file saved rotation remains an additional offset: `(saved + 90) % 360`. Photos retain their existing orientation and interval. The original USB files and cached MP4 streams are not re-encoded or rotated, only the TV display is rotated. This baseline needs no new preference and therefore survives app restarts and future album refreshes.
 
 Run `node apps/family-frame/test-playback.cjs`, which simulates long buffering, native video completion, global and per-file rotation, and unchanged photo timing. Real-TV playback and landscape/portrait visual proportions require verification on LG.
+
+## 1.2.5 — Changing USB drives and media contents
+
+- The album API now provides a short opaque per-item `rev` alongside the
+  persistent path-based media ID. It reflects file size, modification time,
+  inode, device and volume mount generation. A replaced USB drive with the
+  same filenames can still change the item revision.
+- The TV checks the album every 30 seconds. It keeps the current item when
+  unchanged; if its revision changes, the display reloads the file. If a
+  current item is removed, the player moves to a remaining valid item.
+  When the USB is absent and there are no other files it shows an empty
+  collection message. Reinserted media appears without rebooting the TV.
+- The Pi server also scans nested folders (up to four levels), without
+  following symlinks or crossing filesystem boundaries, with limits to
+  avoid expensive scans on an underpowered Raspberry Pi 3.
+- The USB mount at /mnt/family-usb is currently defined by a fixed UUID
+  in the Pi's /etc/fstab. This is a separate OS-level limitation: another
+  USB stick with a different UUID will need an auto-mount manager or admin
+  reconfiguration. This app update alone does not change /etc/fstab.
+- Photos/videos remain read-only; video cached copies are generated on Pi.
+  Existing per-file rotation and hidden settings continue to use the
+  stable path-based media ID. The native SmartShare hybrid remains disabled.
+
+Run: node apps/family-frame/test-playback.cjs
+Run: python3 services/family-frame/test_edits.py
+
+### Optional root-level auto-mount of different USB drives
+
+The currently active Pi mounts the existing flash at /mnt/family-usb as
+read-only with a fixed filesystem UUID in /etc/fstab. This works for file edits
+and re-plugging the *same* flash, but not a different drive with another UUID.
+The app itself cannot mount block devices without administrator privileges.
+
+The repository includes a **separate, not activated** mount manager:
+scripts/family_usb_manager.py. It monitors attached USB block devices every
+10 seconds and mounts one supported USB volume at /mnt/family-usb using
+ro,nosuid,nodev,noexec. Supported filesystems: FAT, exFAT, NTFS, ext4. It
+does not touch the SD-card boot/root partitions, refuses to choose between
+multiple unmounted USB volumes, leaves a currently working read-only mount
+alone, and avoids mounting a USB already used elsewhere.
+
+The installer requires *one explicit terminal invocation with sudo* on Pi:
+
+    cd ~/projects/RS-TV-HOME
+    sudo bash scripts/install_family_usb_hotplug.sh
+
+It backs up /etc/fstab to /etc/fstab.rs-family-usb-original, comments
+only the previous /mnt/family-usb entry, and installs a root-owned copy of
+the manager with its systemd unit. The installer attempts to restore fstab
+on failure. No original USB file is modified.
+
+To fully roll back that optional installation:
+
+    cd ~/projects/RS-TV-HOME
+    sudo bash scripts/uninstall_family_usb_hotplug.sh
+
+This switches back to the old UUID-specific fstab entry. The actual mount
+can be checked without sudo first:
+
+    python3 scripts/family_usb_manager.py --check
+
+These scripts were unit-tested without touching /etc/fstab:
+
+    python3 scripts/test_family_usb_manager.py
+
+The manager is a prepared capability, **not installed or enabled** by the
+user-level remote account. It requires administrator installation and a
+real unplug/replug test before full USB swap support is confirmed.

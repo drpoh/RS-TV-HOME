@@ -64,7 +64,14 @@ function order(a){if(!random)return a.slice();var p=[],b=[],r=[];for(var i=0;i<a
 function rebuild(force){var old=items[index]&&items[index].id,prev=items[index],i,list=all.filter(function(a){return filter==='all'||filter===a.type;}),map={},next=[];
  if(!force&&random){for(i=0;i<list.length;i++)map[list[i].id]=list[i];for(i=0;i<items.length;i++)if(map[items[i].id]){next.push(map[items[i].id]);delete map[items[i].id];}items=next.concat(order(list.filter(function(a){return !!map[a.id];})));}else items=order(list);
  if(!items.length){++seq;clear();stopVideo();mode='';el('p0').style.opacity=el('p1').style.opacity='0';empty('Нет файлов выбранного типа. Измените режим показа.');count();return;}
- for(i=0;i<items.length;i++)if(items[i].id===old){index=i;if(prev&&saved===angle){angle=saved=items[i].rotation||0;applyRotation();}count();return;}
+ for(i=0;i<items.length;i++)if(items[i].id===old){
+  index=i;
+  // The name/id may be unchanged while a new flash drive or new contents
+  // replace the underlying file. Force a fresh fetch of the displayed item.
+  if(prev&&prev.rev!==items[i].rev){show(i);return;}
+  if(prev&&saved===angle){angle=saved=items[i].rotation||0;applyRotation();}
+  count();return;
+ }
  show(force?0:Math.min(index,items.length-1));}
 function refresh(){
  if(pending||editBusy)return;pending=true;var x=new XMLHttpRequest(),finished=false,ticket=++albumSeq;
@@ -72,7 +79,7 @@ function refresh(){
  x.open('GET',base+'/api/album',true);x.timeout=6000;
  x.onreadystatechange=function(){if(x.readyState!==4||!done())return;if(x.status!==200){if(!loaded)empty('Альбом недоступен. Проверяем подключение.');return;}
   try{var a=JSON.parse(x.responseText),fresh=a.items||[],sig=[],i;hiddenCount=a.hiddenCount||0;
-   for(i=0;i<fresh.length;i++)sig.push(fresh[i].id+':'+(fresh[i].rotation||0));sig.sort();sig=sig.join(',');
+   for(i=0;i<fresh.length;i++)sig.push(fresh[i].id+':'+(fresh[i].rotation||0)+':'+(fresh[i].rev||''));sig.sort();sig=sig.join(',');
    if(sig===signature)return;signature=sig;all=fresh;rebuild(false);if(menu&&!confirm)render(focus);
   }catch(e){if(!loaded)empty('Не удалось прочитать альбом.');}
  };

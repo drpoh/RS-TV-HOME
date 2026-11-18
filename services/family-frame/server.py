@@ -55,19 +55,77 @@ def edit(data,body,available):
     return False
 
 
+def volume_generation(root):
+    """Identify a mounted volume, not just its mount path.
+
+    The kernel mount ID changes on unplug/reinsert and when a different flash
+    drive is mounted at the same directory. Avoid retaining a stale playlist
+    when the replacement carries identical file names and timestamps.
+    """
+    try:
+        target=str(root.resolve())
+        with open('/proc/self/mountinfo',encoding='utf-8') as src:
+            for line in src:
+                fields=line.split()
+                if len(fields)>5 and fields[4].replace(r'\040',' ')==target:
+                    return fields[0]
+    except OSError:
+        pass
+    try:
+        stat_root=root.stat()
+        return str(stat_root.st_dev)+':'+str(stat_root.st_ino)
+    except OSError:
+        return 'missing'
+
+
+def entry_revision(p,s,volume):
+    """Tiny opaque revision: file replacement, edit and drive changes."""
+    payload=(str(s.st_dev)+':'+str(s.st_ino)+':'+str(s.st_size)+':'
+             +str(s.st_mtime_ns)+':'+str(volume))
+    return hashlib.sha256(payload.encode('ascii')).hexdigest()[:16]
+
+
+def media_paths(root):
+    """Read changing folders without following symlinks or leaving the volume.
+
+    A replacement flash drive can contain its own DCIM, Photos and Videos
+    folders. Limit traversal to bound work on Raspberry Pi 3.
+    """
+    try:root_device=root.stat().st_dev
+    except OSError:return
+    stack=[(root,0)]
+    visited=0
+    while stack and visited<300:
+        current,depth=stack.pop()
+        visited+=1
+        try:children=sorted(current.iterdir(),key=lambda p:p.name.casefold())
+        except OSError:continue
+        folders=[]
+        for p in children:
+            if p.name.startswith('.'):continue
+            try:
+                if p.is_symlink():continue
+                s=p.stat()
+            except OSError:continue
+            if s.st_dev!=root_device:continue
+            if stat.S_ISDIR(s.st_mode):
+                if depth<4:folders.append((p,depth+1))
+            elif stat.S_ISREG(s.st_mode):
+                yield p,s
+        stack.extend(reversed(folders))
+
+
 def entries():
     result={}
     for root in (ALBUM,USB):
         if not root.is_dir() or root.is_symlink():continue
-        for p in sorted(root.iterdir(),key=lambda p:p.name.casefold()):
+        volume=volume_generation(root)
+        for p,s in media_paths(root):
             kind=TYPES.get(p.suffix.lower())
-            if p.name.startswith('.') or not kind or p.is_symlink():continue
-            try:s=p.stat()
-            except OSError:continue
-            if not stat.S_ISREG(s.st_mode) or s.st_size<=0:continue
+            if not kind or s.st_size<=0:continue
             if root==ALBUM and kind.startswith('image') and s.st_size>LIMIT:continue
-            key=hashlib.sha256(os.fsencode(p) if root==USB else p.name.encode()).hexdigest()[:24]
-            result[key]=(p,kind)
+            key=hashlib.sha256(os.fsencode(p) if root==USB else str(p.relative_to(root)).encode()).hexdigest()[:24]
+            result[key]=(p,kind,entry_revision(p,s,volume))
             if len(result)>=2000:return result
     return result
 
@@ -90,7 +148,7 @@ def video_cache_ready(out):
     except OSError:return False
 
 def prepare_video(p):
-    if p.parent not in (USB,ALBUM) or p.suffix.lower()!='.mp4' or p.is_symlink():
+    if not (p.is_relative_to(USB) or p.is_relative_to(ALBUM)) or p.suffix.lower()!='.mp4' or p.is_symlink():
         raise ValueError('unsafe source')
     out=video_cache_path(p)
     if video_cache_ready(out):return out
@@ -133,7 +191,7 @@ def video_cache_worker():
             video_jobs.task_done()
 
 def photo(p):
-    if p.parent!=USB:return p,TYPES[p.suffix.lower()]
+    if not p.is_relative_to(USB):return p,TYPES[p.suffix.lower()]
     s=p.stat()
     name=hashlib.sha256(os.fsencode(p)+str((s.st_size,s.st_mtime_ns)).encode()).hexdigest()
     out=CACHE/(name+'.jpg')
@@ -192,13 +250,13 @@ class Handler(BaseHTTPRequestHandler):
                 with meta_lock:
                     data=metadata()
                 e={k:v for k,v in entries().items() if k not in set(data['hidden'])}
-                b=json.dumps({'photos':[k for k,(_,t) in e.items() if t.startswith('image')],'items':[{'id':k,'type':'video' if t.startswith('video') else 'photo','rotation':data['rotations'].get(k,0)} for k,(_,t) in e.items()],'interval':10,'hiddenCount':len(data['hidden'])}).encode()
+                b=json.dumps({'photos':[k for k,(_,t,_) in e.items() if t.startswith('image')],'items':[{'id':k,'type':'video' if t.startswith('video') else 'photo','rotation':data['rotations'].get(k,0),'rev':rev} for k,(_,t,rev) in e.items()],'interval':10,'hiddenCount':len(data['hidden'])}).encode()
                 self.headers_for(200,'application/json',len(b))
                 if body:self.wfile.write(b)
                 return
             match=re.fullmatch(r'/(photo|video)/([0-9a-f]{24})',self.path)
             if not match:self.send_error(404);return
-            p,kind=entries().get(match[2],(None,None))
+            p,kind,_=entries().get(match[2],(None,None,None))
             if p is None or (match[1]=='video')!=(kind=='video/mp4'):
                 self.send_error(404);return
             if match[1]=='video':p=queue_video(p)

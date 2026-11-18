@@ -2,7 +2,7 @@
 // Isolated browser simulation: no physical TV, user media, or Home Assistant writes.
 const assert=require('assert'),fs=require('fs'),vm=require('vm');
 const nodes={},intervals=[],future=[],listeners={};
-let playCount=0,now=0,loading=0;
+let playCount=0,now=0,loading=0,imageLoads=0;
 function node(id){
  return nodes[id]||(nodes[id]={
   id,className:'',style:{},children:[],innerHTML:'',textContent:'',disabled:false,
@@ -17,9 +17,9 @@ const document={activeElement:null,hidden:false,webkitHidden:false,
  addEventListener(name,fn){listeners[name]=fn;}};
 const window={innerWidth:1280,innerHeight:720,addEventListener(){},PalmSystem:null};
 const album={items:[
- {id:'a'.repeat(24),type:'video',rotation:0},
- {id:'b'.repeat(24),type:'video',rotation:270},
- {id:'c'.repeat(24),type:'photo',rotation:0}
+ {id:'a'.repeat(24),type:'video',rotation:0,rev:'a0'},
+ {id:'b'.repeat(24),type:'video',rotation:270,rev:'b0'},
+ {id:'c'.repeat(24),type:'photo',rotation:0,rev:'c0'}
 ],hiddenCount:0};
 class XHR {
  open(method,url){this.url=url;this.method=method;}
@@ -31,7 +31,7 @@ class XHR {
  }
 }
 class Image {
- set src(val){this._src=val;if(this.onload)this.onload();}
+ set src(val){this._src=val;imageLoads++;if(this.onload)this.onload();}
 }
 class Clock extends Date{constructor(...a){super(...(a.length?a:[now]));}static now(){return now;}}
 const context={document,window,Date:Clock,XMLHttpRequest:XHR,
@@ -62,4 +62,36 @@ now=500000;tick();assert.equal(nodes.count.textContent,'2 / 3 · Видео');
 video.onended();assert.equal(nodes.count.textContent,'3 / 3 · 10 сек.');
 assert.equal(nodes.p1.style.transform,'rotate(0deg)', 'photo rotation remains unchanged');
 assert(future.some(x=>x.ms===10000),'photo slideshow timer remains intact');
+// Album may change or disappear while the TV stays powered on.
+const refresh=intervals.find(x=>x.ms===30000).fn;
+const loadsBefore=imageLoads;
+album.items[2]={id:'c'.repeat(24),type:'photo',rotation:0,rev:'c1'};
+refresh();
+assert(imageLoads>loadsBefore,'same name, new contents: reload displayed photo');
+assert.equal(nodes.count.textContent,'3 / 3 · 10 сек.');
+
+// Removing the currently shown file must never leave an old image/video active.
+album.items=album.items.slice(0,2);
+refresh();
+assert.equal(nodes.count.textContent,'2 / 2 · Видео');
+assert.equal(video.style.transform,'rotate(0deg)');
+const playsBefore=playCount;
+album.items[1]={id:'b'.repeat(24),type:'video',rotation:270,rev:'new-volume'};
+refresh();
+assert.equal(playCount,playsBefore+1,'same ID, different USB source: reload current video');
+assert.equal(nodes.count.textContent,'2 / 2 · Видео');
+
+// Unplugging all media shows a stable empty album.
+album.items=[];
+refresh();
+assert.equal(nodes.message.textContent,'Нет файлов выбранного типа. Измените режим показа.');
+assert.equal(video.className,'hidden');
+
+// Newly inserted source resumes without a TV or app restart.
+album.items=[{id:'d'.repeat(24),type:'video',rotation:0,rev:'drive-2'}];
+const previous=playCount;
+refresh();
+assert.equal(playCount,previous+1);
+assert.equal(nodes.count.textContent,'1 / 1 · Видео');
+console.log('FRAME_DYNAMIC_MEDIA_TEST_OK');
 console.log('FRAME_FULL_VIDEO_AND_ROTATION_TEST_OK');
