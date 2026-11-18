@@ -1,4 +1,4 @@
-# Family Frame 1.2.1
+# Family Frame 1.2.3
 
 Use the remote left/right for previous/next, OK for pause/resume and up/down for the playback menu. Clicking the displayed media also opens the menu. Back closes the menu (then exits the app). Opening the menu pauses playback; select Continue to resume. Photo interval is 5–120 seconds in five-second increments, videos play to completion. Choose all media, photos only, or videos only; shuffle or sequential order; optional clock. Local playback preferences persist in the TV's application storage.
 
@@ -9,3 +9,13 @@ Source contains no album content or metadata. Materialize family-frame to genera
 Run python3 services/family-frame/test_edits.py for isolated synthetic API tests. Real-TV rendering and remote operation require manual verification.
 
 1.2.1 keeps menu nodes stable during unchanged album refreshes, uses a separate input surface above media, and restores focus on visibility and window changes. Cursor visibility is still controlled by webOS and the remote input connection.
+
+## 1.2.3 — USB MP4 playback reliability
+
+Most original USB MP4s had their container index (moov) beyond the first megabyte. Raspberry Pi prepares separate private copies under ~/.cache/rs-family-frame/video/ using ffmpeg stream-copy and +faststart. Video and audio are not re-encoded, and the original USB remains read-only. Cache filenames are derived from the source path, file size and modification time. Cache directory permissions are 0700 and files are 0600.
+
+After materializing Family Frame, run the prepare_videos.py helper in the ignored dist/family-frame/service directory to prebuild the cache. The HTTP server serves optimized ready copies with normal byte-range support. For new MP4 files, one bounded background cache worker prepares copies while original playback remains available. At least 4 GiB free space must remain.
+
+The TV client now checks actual media currentTime progress. After 8 seconds without progress, it retries the file once and seeks to the last seen position when supported. If playback freezes again, it skips the file instead of remaining stuck. Paused or hidden playback is excluded from this recovery check.
+
+Tests: python3 services/family-frame/test_edits.py and node apps/family-frame/test-playback.cjs. They use synthetic media and never modify original USB. Some highly compressed or high-bitrate videos may still be incompatible with older TV hardware; playback on the real television requires final verification.

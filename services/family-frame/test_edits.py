@@ -5,11 +5,37 @@ import secrets
 import tempfile
 import threading
 import unittest
+from unittest import mock
+from types import SimpleNamespace
 import urllib.request
 import urllib.error
 from pathlib import Path
 
 class Edits(unittest.TestCase):
+    def test_faststart_cache(self):
+        import subprocess
+        spec=importlib.util.spec_from_file_location("frame_cache",Path(__file__).with_name("server.py"))
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);m.USB=root/"usb";m.USB.mkdir();m.ALBUM=root/"album";m.ALBUM.mkdir()
+            m.CACHE=root/"cache";m.CACHE.mkdir()
+            m.VIDEO_CACHE=m.CACHE/"video"
+            src=m.USB/"sample.mp4"
+            subprocess.run(["ffmpeg","-nostdin","-loglevel","error","-f","lavfi","-i",
+                "testsrc=size=128x72:rate=10","-t","1","-pix_fmt","yuv420p",
+                "-c:v","mpeg4","-y",str(src)],check=True,timeout=12)
+            original=src.read_bytes()
+            self.assertNotIn(b"moov",original[:100])
+            with mock.patch.object(m.shutil,"disk_usage",return_value=SimpleNamespace(free=10*1024**3)):
+                cached=m.prepare_video(src)
+            self.assertTrue(m.video_cache_ready(cached))
+            self.assertEqual(src.read_bytes(),original)
+            self.assertNotEqual(src,cached)
+            self.assertEqual(m.queue_video(src),cached)
+            self.assertEqual(m.prepare_video(src),cached)
+            self.assertEqual(cached.stat().st_mode & 0o777,0o600)
+            self.assertEqual(m.VIDEO_CACHE.stat().st_mode & 0o777,0o700)
+
     def test_album_edits(self):
         spec=importlib.util.spec_from_file_location("frame",Path(__file__).with_name("server.py"))
         m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)

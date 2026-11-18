@@ -1,5 +1,5 @@
 """Local photo/video frame; USB is a read-only source."""
-import hmac, hashlib, json, os, re, shutil, stat, subprocess, threading, tempfile
+import hmac, hashlib, json, os, re, shutil, stat, subprocess, threading, tempfile, queue, time
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ALBUM=Path.home()/'rs-family-photos'
@@ -71,6 +71,67 @@ def entries():
             if len(result)>=2000:return result
     return result
 
+VIDEO_CACHE=CACHE/'video'
+video_jobs=queue.Queue(maxsize=8)
+video_queued=set()
+video_queued_lock=threading.Lock()
+video_failures={}
+
+def video_cache_path(p):
+    s=p.stat()
+    fingerprint=hashlib.sha256(os.fsencode(p)+str((s.st_size,s.st_mtime_ns)).encode()).hexdigest()
+    return VIDEO_CACHE/(fingerprint+'.mp4')
+
+def video_cache_ready(out):
+    try:
+        if out.is_symlink() or out.stat().st_size<1024:return False
+        with out.open('rb') as f:head=f.read(1048576)
+        return head[4:8]==b'ftyp' and b'moov' in head
+    except OSError:return False
+
+def prepare_video(p):
+    if p.parent not in (USB,ALBUM) or p.suffix.lower()!='.mp4' or p.is_symlink():
+        raise ValueError('unsafe source')
+    out=video_cache_path(p)
+    if video_cache_ready(out):return out
+    if shutil.disk_usage(CACHE).free<4*1024**3:
+        raise OSError('not enough disk for video cache')
+    VIDEO_CACHE.mkdir(mode=0o700,parents=True,exist_ok=True)
+    fd,tmp=tempfile.mkstemp(prefix='.video-',suffix='.mp4',dir=VIDEO_CACHE)
+    os.close(fd)
+    try:
+        subprocess.run(['ffmpeg','-nostdin','-hide_banner','-loglevel','error','-threads','1',
+            '-i',str(p),'-map','0:v:0','-map','0:a:0?','-c','copy','-movflags','+faststart',
+            '-map_metadata','-1','-y',tmp],check=True,timeout=120,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        if not video_cache_ready(Path(tmp)):raise OSError('invalid faststart output')
+        os.replace(tmp,out)
+        return out
+    finally:
+        if os.path.exists(tmp):os.unlink(tmp)
+
+def queue_video(p):
+    try:
+        dest=video_cache_path(p)
+        if video_cache_ready(dest):return dest
+    except OSError:return p
+    with video_queued_lock:
+        if dest not in video_queued and time.monotonic()-video_failures.get(dest,-1e9)>600:
+            try:
+                video_jobs.put_nowait((p,dest))
+                video_queued.add(dest)
+            except queue.Full:pass
+    return p
+
+def video_cache_worker():
+    while True:
+        p,dest=video_jobs.get()
+        try:prepare_video(p)
+        except (OSError,ValueError,subprocess.SubprocessError):
+            with video_queued_lock:video_failures[dest]=time.monotonic()
+        finally:
+            with video_queued_lock:video_queued.discard(dest)
+            video_jobs.task_done()
+
 def photo(p):
     if p.parent!=USB:return p,TYPES[p.suffix.lower()]
     s=p.stat()
@@ -140,6 +201,7 @@ class Handler(BaseHTTPRequestHandler):
             p,kind=entries().get(match[2],(None,None))
             if p is None or (match[1]=='video')!=(kind=='video/mp4'):
                 self.send_error(404);return
+            if match[1]=='video':p=queue_video(p)
             if match[1]=='photo':
                 try:p,kind=photo(p)
                 except (OSError,subprocess.SubprocessError):self.send_error(422);return
@@ -174,4 +236,5 @@ class Handler(BaseHTTPRequestHandler):
 if __name__=='__main__':
     os.umask(0o077)
     ALBUM.mkdir(mode=0o700,exist_ok=True)
+    threading.Thread(target=video_cache_worker,daemon=True,name="video-cache").start()
     ThreadingHTTPServer((HOST,8788),Handler).serve_forever()
