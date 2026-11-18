@@ -19,3 +19,11 @@ After materializing Family Frame, run the prepare_videos.py helper in the ignore
 The TV client now checks actual media currentTime progress. After 8 seconds without progress, it retries the file once and seeks to the last seen position when supported. If playback freezes again, it skips the file instead of remaining stuck. Paused or hidden playback is excluded from this recovery check.
 
 Tests: python3 services/family-frame/test_edits.py and node apps/family-frame/test-playback.cjs. They use synthetic media and never modify original USB. Some highly compressed or high-bitrate videos may still be incompatible with older TV hardware; playback on the real television requires final verification.
+
+## 1.2.4 — Complete videos and universal video rotation
+
+All video files play until the media element reports native `ended` (or the user explicitly selects the next item). The video no longer inherits a slideshow timeout, a 30-second startup/buffering watchdog or the 8-second playback-progress auto-skip. Network buffering displays a message but does not restart the source or advance the playlist. A fatal media error is still handled by the existing error route; unsupported/corrupt media cannot be guaranteed to play.
+
+Every video's displayed orientation includes a permanent +90-degree clockwise baseline. Per-file saved rotation remains an additional offset: `(saved + 90) % 360`. Photos retain their existing orientation and interval. The original USB files and cached MP4 streams are not re-encoded or rotated, only the TV display is rotated. This baseline needs no new preference and therefore survives app restarts and future album refreshes.
+
+Run `node apps/family-frame/test-playback.cjs`, which simulates long buffering, native video completion, global and per-file rotation, and unchanged photo timing. Real-TV playback and landscape/portrait visual proportions require verification on LG.
