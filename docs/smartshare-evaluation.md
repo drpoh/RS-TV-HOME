@@ -114,3 +114,37 @@ rotated to an H.264 output with no rotation matrix. The second strategy is
 slower and changes video compression. The metadata-only strategy has not
 yet been visually confirmed on this legacy LG. Production hybrid autoplay
 remains disabled until that and error recovery are verified.
+
+## Magic Remote loss of cursor (2026-11-19)
+
+This is a separate issue from slideshow/SmartShare playback. The remote's
+Bluetooth HID stream to Raspberry Pi 3 can stop even while the BlueZ device is
+marked Connected and the TV input WebSocket remains active.
+
+Observed on the Pi: Bluetooth hci0 emitted unexpected HCI events and a
+"Frame reassembly failed (-84)" error at approximately 20:22 local time.
+The remote bridge's HID frame and pointer movement counters stopped
+completely while its status still reported HID connected, pointer enabled,
+and a 100% remote battery. Restarting only rs-magic-remote.service did not
+restore input. A paired-only Bluetooth disconnect/reconnect also failed with
+BlueZ InProgress. Power cycling only the Pi Bluetooth controller via
+bluetoothctl power off/on (no pairing deletion, no Pi reboot), then
+reconnecting the already-paired MR22 and restarting the user bridge restored
+HID data. Follow-up sample recorded hundreds of HID reports and pointer moves.
+
+For future repeat cases, scripts/recover_magic_remote.py is a manual helper.
+It has a read-only --check operation and an opt-in --recover operation.
+Recover checks for one trusted/paired LGE MR22, refuses to reset if other
+Bluetooth devices are connected, briefly stops only the RS Magic Remote
+service, cycles the Pi Bluetooth radio, attempts to reconnect the paired
+remote, and restores the bridge in finally. It does not touch media, TV app
+settings, or saved Bluetooth pairings. It does NOT run automatically, to
+avoid resetting an idle/sleeping remote or other device on false alarms.
+
+    python3 scripts/recover_magic_remote.py --check
+    python3 scripts/recover_magic_remote.py --recover
+
+A disappearing on-screen pointer in a specific TV application can also be
+caused by that app's cursor behavior. A healthy HID stream and pointer move
+counter prove the Pi resumed sending movement but do not substitute for
+visual confirmation on the LG panel.
