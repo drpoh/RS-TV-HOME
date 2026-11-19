@@ -1,0 +1,12 @@
+[Unit]
+Description=RS MR22 Bluetooth/HID fault guard
+After=bluetooth.service
+[Service]
+Type=oneshot
+WorkingDirectory=%h/projects/RS-TV-HOME
+ExecStart=/usr/bin/python3 %h/projects/RS-TV-HOME/scripts/mr22_bt_guard.py --run
+TimeoutStartSec=150
+Nice=10
+IOSchedulingClass=idle
+[Install]
+WantedBy=default.target

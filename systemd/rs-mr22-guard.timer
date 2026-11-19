@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for verified MR22 Bluetooth HCI faults
+[Timer]
+OnActiveSec=35s
+OnUnitInactiveSec=35s
+AccuracySec=5s
+Persistent=false
+Unit=rs-mr22-guard.service
+[Install]
+WantedBy=timers.target
