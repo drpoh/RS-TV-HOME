@@ -157,3 +157,26 @@ The root installation is deliberately optional; all mount selector tests
 are executed with mocked system commands, never touching real flash media:
 
     python3 scripts/test_family_usb_manager.py
+
+
+### Fix for existing USB auto-manager installations (RW not visible)
+
+An earlier installer included PrivateTmp=true, which creates a mount namespace
+for the systemd service. The manager could report that a remount to RW succeeded
+while /mnt/family-usb remained RO to the rest of the Pi. The new installer
+does not create a private mount namespace.
+
+For already-installed managers, a one-time administrator repair is available:
+
+    cd ~/projects/RS-TV-HOME
+    sudo bash scripts/repair_family_usb_mount_namespace.sh
+
+This verifies the known manager unit, backs it up temporarily, removes only
+PrivateTmp=true, reloads and restarts the service, and waits for the host
+to report the configured mount mode (RW or RO). If repair fails, the unit is
+restored. Existing fstab backup and the USB media contents are not changed.
+Verify via:
+
+    findmnt -n -T /mnt/family-usb -o TARGET,FSTYPE,OPTIONS
+
+The output must contain rw if /etc/default/rs-family-usb selects rw.

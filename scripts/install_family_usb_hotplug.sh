@@ -70,7 +70,8 @@ ExecStart=/usr/bin/python3 /usr/local/libexec/rs-family-usb-manager.py
 Restart=always
 RestartSec=10
 UMask=0077
-PrivateTmp=true
+# Do not set PrivateTmp/PrivateMounts here: mount changes must be
+# visible to the rest of the Pi, not only to this service.
 [Install]
 WantedBy=multi-user.target
 EOF
